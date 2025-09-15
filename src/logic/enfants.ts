@@ -1,4 +1,4 @@
-import type { Horaire, Intervalle } from "./shared";
+import type { Horaire, Intervalle, SemaineOf } from "./shared";
 
 type Enfant = {
   nom: string;
@@ -8,18 +8,15 @@ type Enfant = {
 
 type CreneauEnfant = Intervalle & { isAdaptation: boolean };
 
-// du lundi au vendredi
-type Semaine = [
-  CreneauEnfant | null,
-  CreneauEnfant | null,
-  CreneauEnfant | null,
-  CreneauEnfant | null,
-  CreneauEnfant | null
-];
-
-type CreneauxEnfant = Semaine[];
+type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
 
 export type ContraintesEnfants = {
   firstMonday: Date; // lien avec le calendrier réel
   enfants: { enfant: Enfant; creneaux: CreneauxEnfant }[];
 };
+
+export namespace Enfants {
+  export function semaineCount(input: ContraintesEnfants) {
+    return Math.max(...input.enfants.map(e => e.creneaux.length));
+  }
+}
