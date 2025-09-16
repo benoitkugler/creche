@@ -1,6 +1,6 @@
 import type { int, Intervalle } from "./shared";
 
-type Pro = {
+export type Pro = {
   prenom: string;
 };
 
@@ -26,3 +26,10 @@ type PlanningProsSemaine = {
 };
 
 export type PlanningPros = PlanningProsSemaine[];
+
+export namespace Pros {
+  /** returns the maximum semaine + 1 */
+  export function semaineCount(input: PlanningPros) {
+    return Math.max(...input.map(e => e.semaine)) + 1;
+  }
+}

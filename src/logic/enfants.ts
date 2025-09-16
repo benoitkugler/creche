@@ -1,22 +1,23 @@
-import type { Horaire, Intervalle, SemaineOf } from "./shared";
+import type { Intervalle, SemaineOf } from "./shared";
 
-type Enfant = {
+export type Enfant = {
   nom: string;
   dateNaissance: Date;
-  marcheur: boolean;
+  isMarcheur: boolean;
 };
 
 type CreneauEnfant = Intervalle & { isAdaptation: boolean };
 
 type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
 
-export type ContraintesEnfants = {
+export type PlanningEnfants = {
   firstMonday: Date; // lien avec le calendrier réel
   enfants: { enfant: Enfant; creneaux: CreneauxEnfant }[];
 };
 
 export namespace Enfants {
-  export function semaineCount(input: ContraintesEnfants) {
+  /** returns the maximum semaine */
+  export function semaineCount(input: PlanningEnfants) {
     return Math.max(...input.enfants.map(e => e.creneaux.length));
   }
 }

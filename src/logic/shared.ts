@@ -1,4 +1,4 @@
-export type int = number & { __opaque__: "int" };
+export type int = number;
 
 export type Horaire = {
   heure: Heure;
