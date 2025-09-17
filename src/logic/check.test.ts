@@ -105,7 +105,7 @@ test("normalize pros", () => {
   const grid = _normalizePros([
     {
       semaine: 1,
-      horaires: [
+      prosHoraires: [
         {
           pro,
           horaires: [

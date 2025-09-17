@@ -119,7 +119,7 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
 
   input.forEach(semaine => {
     const iSemaine = semaine.semaine;
-    semaine.horaires.forEach(pro => {
+    semaine.prosHoraires.forEach(pro => {
       pro.horaires.forEach((day, iDay) => {
         const currentDay = out[iSemaine][iDay];
         // gestion de la pause : 2 plages
