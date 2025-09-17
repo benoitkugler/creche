@@ -1,11 +1,11 @@
 import type { CellValue, Row } from "read-excel-file";
 import {
-  emptyIntervalle,
+  emptyRange,
   isHeure,
   isMinute,
   type error,
   type int,
-  type Intervalle,
+  type Range,
   type SemaineOf
 } from "./shared";
 
@@ -14,8 +14,8 @@ export type Pro = {
 };
 
 type HoraireTravail = {
-  presence: Intervalle;
-  pause: Intervalle;
+  presence: Range;
+  pause: Range;
 };
 
 type SemainePro = {
@@ -34,12 +34,15 @@ type PlanningProsSemaine = {
   prosHoraires: SemainePro[]; // pour chaque pro
 };
 
-export type PlanningPros = PlanningProsSemaine[];
+export type PlanningPros = {
+  firstMonday: Date; // convenience field, copied from enfants
+  semaines: PlanningProsSemaine[];
+};
 
 export namespace Pros {
   /** returns the maximum semaine + 1 */
   export function semaineCount(input: PlanningPros) {
-    return Math.max(...input.map(e => e.semaine)) + 1;
+    return Math.max(...input.semaines.map(e => e.semaine)) + 1;
   }
 
   /** You should use `readXlsxFile` to produce rows */
@@ -47,7 +50,7 @@ export namespace Pros {
     rows: Row[],
     firstMonday: Date
   ): [PlanningPros, error] {
-    const out: PlanningPros = [];
+    const out: PlanningPros = { firstMonday, semaines: [] };
     let currentWeek: PlanningProsSemaine = { semaine: -1, prosHoraires: [] };
 
     for (let index = 0; index < rows.length; index++) {
@@ -59,21 +62,21 @@ export namespace Pros {
       if (typeof firstCell != "string") continue;
       if (firstCell.toLowerCase().includes("semaine")) {
         const [semaine, err] = parseSemaine(firstCell, firstMonday);
-        if (err.length) return [[], err];
+        if (err.length) return [out, err];
 
         // flush the current week if any
         if (currentWeek.semaine != -1) {
-          out.push(currentWeek);
+          out.semaines.push(currentWeek);
         }
         currentWeek = { semaine, prosHoraires: [] }; // start a new week
       } else if (firstCell.trim().length != 0 && currentWeek.semaine != -1) {
         // this is a pro !
         // fetch the next line
         index += 1;
-        if (index >= rows.length) return [[], "Ligne de pauses manquantes."];
+        if (index >= rows.length) return [out, "Ligne de pauses manquantes."];
         const res = parseHorairesPros(row, rows[index]);
         if (typeof res == "string") {
-          return [[], res];
+          return [out, res];
         }
         currentWeek.prosHoraires.push(res);
       }
@@ -81,7 +84,7 @@ export namespace Pros {
 
     // flush the last week if any
     if (currentWeek.prosHoraires.length != 0) {
-      out.push(currentWeek);
+      out.semaines.push(currentWeek);
     }
 
     return [out, ""];
@@ -140,13 +143,13 @@ function parseHorairesDay(
   };
 }
 
-function parseIntervalle(cell: CellValue): Intervalle {
+function parseIntervalle(cell: CellValue): Range {
   if (typeof cell != "string" || cell.length == 0) {
-    return emptyIntervalle();
+    return emptyRange();
   }
   const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
   const match = reHoraire.exec(cell);
-  if (match === null) return emptyIntervalle();
+  if (match === null) return emptyRange();
   const debutHour = isHeure(Number(match[1]));
   const debutMinute = isMinute(Number(match[2]));
   const finHour = isHeure(Number(match[3]));
@@ -157,7 +160,7 @@ function parseIntervalle(cell: CellValue): Intervalle {
     finHour == null ||
     finMinute == null
   ) {
-    return emptyIntervalle();
+    return emptyRange();
   }
   return {
     debut: { heure: debutHour, minute: debutMinute },

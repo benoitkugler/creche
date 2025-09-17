@@ -1,12 +1,13 @@
-import { en } from "vuetify/locale";
 import { Enfants, type PlanningEnfants } from "./enfants";
 import { Pros, type PlanningPros } from "./personnel";
 import {
+  computeDate,
   HeureMax,
   HeureMin,
   type Heure,
   type Horaire,
   type int,
+  type Range,
   type Minute,
   type SemaineOf
 } from "./shared";
@@ -15,6 +16,8 @@ const marcheursParPro = 8;
 const nonMarcheursParPro = 3;
 
 // TODO: que faire d'un groupe mixte avec une seule pro ?
+
+type Diagnostic = { date: Date; check: Check };
 
 /** `check` analyze les données fournies et s'assure qu'il y a
  * suffisament de pros à tout moment de la journée.
@@ -38,7 +41,7 @@ export function horaireToIndex(h: Horaire) {
 }
 
 export function indexToHoraire(index: number): Horaire {
-  const heure = index / 12;
+  const heure = Math.floor(index / 12);
   const minute = index % 12;
   return { heure: (HeureMin + heure) as Heure, minute: (minute * 5) as Minute };
 }
@@ -117,7 +120,7 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
       ] as SemaineOf<int[]>
   );
 
-  input.forEach(semaine => {
+  input.semaines.forEach(semaine => {
     const iSemaine = semaine.semaine;
     semaine.prosHoraires.forEach(pro => {
       pro.horaires.forEach((day, iDay) => {
@@ -140,30 +143,40 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
   return out;
 }
 
-export const DiagnosticKind = {
+export const CheckKind = {
   MissingProAdaption: 0,
-  MissingProForEnfants: 1
+  MissingProForEnfants: 1,
+  MissingProAtReunion: 2
 } as const;
-export type DiagnosticKind =
-  (typeof DiagnosticKind)[keyof typeof DiagnosticKind];
+export type DiagnosticKind = (typeof CheckKind)[keyof typeof CheckKind];
 
-type Diagnostic = {
-  kind: DiagnosticKind;
-  data: MissingProAdaption | MissingProForEnfants;
-};
+type Check =
+  | ({
+      kind: (typeof CheckKind)["MissingProAdaption"];
+    } & MissingProAdaption)
+  | ({
+      kind: (typeof CheckKind)["MissingProForEnfants"];
+    } & MissingProForEnfants)
+  | ({
+      kind: (typeof CheckKind)["MissingProAtReunion"];
+    } & MissingProAtReunion);
 
-type MissingProAdaption = { kind: 0; got: int; expect: int };
-type MissingProForEnfants = { kind: 1; got: int; expect: int };
+type MissingProAdaption = { got: int; expect: int };
+type MissingProForEnfants = { got: int; expect: int };
+type MissingProAtReunion = { got: int; expect: int };
 
 // TODO: check and document the rules
-export function _checkNombreEnfants(enfants: _EnfantsCount, pros: int) {
+export function _checkNombreEnfants(
+  enfants: _EnfantsCount,
+  pros: int
+): Check | undefined {
   // adaption requires a full pro
   if (enfants.adaptionCount > pros) {
     return {
-      kind: DiagnosticKind.MissingProAdaption,
+      kind: CheckKind.MissingProAdaption,
       got: pros,
       expect: enfants.adaptionCount
-    } satisfies MissingProAdaption;
+    };
   }
   pros -= enfants.adaptionCount;
 
@@ -185,12 +198,51 @@ export function _checkNombreEnfants(enfants: _EnfantsCount, pros: int) {
   }
   if (prosForNonMarcheurs + otherPros > pros) {
     return {
-      kind: DiagnosticKind.MissingProForEnfants,
+      kind: CheckKind.MissingProForEnfants,
       got: pros,
       expect: prosForNonMarcheurs + otherPros
-    } satisfies MissingProForEnfants;
+    };
   }
 
   // all good !
+  return;
+}
+
+export function _checkReunion(pros: PlanningPros): Diagnostic | undefined {
+  const reunionDayIndex = 1; // index in week, mardi
+  const horaireReunion: Range = {
+    debut: { heure: 13, minute: 30 },
+    fin: { heure: 14, minute: 30 }
+  };
+
+  const grid = _normalizePros(pros);
+  for (const semaine of pros.semaines) {
+    const prosCount = semaine.prosHoraires.length; // total number of pros this week
+    const reunionDay = grid[semaine.semaine][reunionDayIndex]; // day of the reunion in this week
+    // select the reunion horaire and check
+    const indexStart = horaireToIndex(horaireReunion.debut);
+    const indexEnd = horaireToIndex(horaireReunion.fin);
+    for (let index = indexStart; index < indexEnd; index++) {
+      const prosPresent = reunionDay[index];
+      if (prosPresent < prosCount) {
+        const horaire = indexToHoraire(index);
+        return {
+          date: computeDate(
+            pros.firstMonday,
+            semaine.semaine,
+            reunionDayIndex,
+            horaire
+          ),
+          check: {
+            kind: CheckKind.MissingProAtReunion,
+            expect: prosCount,
+            got: prosPresent
+          }
+        };
+      }
+    }
+  }
+
+  // all good
   return;
 }

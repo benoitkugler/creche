@@ -5,12 +5,12 @@ export type Horaire = {
   minute: Minute;
 };
 
-export type Intervalle = {
+export type Range = {
   debut: Horaire;
   fin: Horaire;
 };
 
-export function emptyIntervalle(): Intervalle {
+export function emptyRange(): Range {
   return { debut: { heure: 12, minute: 0 }, fin: { heure: 12, minute: 0 } };
 }
 
@@ -54,3 +54,22 @@ export function isMinute(v: int): Minute | null {
 export type SemaineOf<T> = [T, T, T, T, T];
 
 export type error = string;
+
+export function computeDate(
+  firstMonday: Date,
+  semaine: int,
+  day: int,
+  horaire: Horaire
+) {
+  const minutesC = 60 * 1000;
+  const heureC = 60 * minutesC;
+  const dayC = 24 * heureC;
+  const semaineC = 7 * dayC;
+  return new Date(
+    firstMonday.getTime() +
+      semaine * semaineC +
+      day * dayC +
+      horaire.heure * heureC +
+      horaire.minute * minutesC
+  );
+}

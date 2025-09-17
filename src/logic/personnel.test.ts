@@ -7,9 +7,9 @@ test("parse personnel", async () => {
   const rows = await readXlsxFile(file);
   const [planning, error] = Pros.parseExcel(rows, new Date(2025, 7, 18));
   expect(error).toBe("");
-  expect(planning).toHaveLength(2);
-  const s1 = planning[0];
-  const s2 = planning[1];
+  expect(planning.semaines).toHaveLength(2);
+  const s1 = planning.semaines[0];
+  const s2 = planning.semaines[1];
   expect(s1.semaine).toBe(1);
   expect(s2.semaine).toBe(19);
   expect(s1.prosHoraires).toHaveLength(4);
