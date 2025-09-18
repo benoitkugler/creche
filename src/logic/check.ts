@@ -180,6 +180,17 @@ export function _checkNombreEnfants(
   }
   pros -= enfants.adaptionCount;
 
+  // special case for 1 pro
+  if (pros <= 1) {
+    if (enfants.marcheurCount + enfants.nonMarcheurCount > 3) {
+      return {
+        kind: CheckKind.MissingProForEnfants,
+        got: pros,
+        expect: 2
+      };
+    }
+  }
+
   // attribute the non Marcheurs, and fill with marcheurs
   let prosForNonMarcheurs = Math.floor(
     enfants.nonMarcheurCount / nonMarcheursParPro

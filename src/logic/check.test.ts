@@ -186,6 +186,15 @@ test("check enfants count", () => {
   expect(_checkEnfantsCount(ec(0, 0, 0), 0)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 0, 0), 1)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 0, 0), 3)).toBeUndefined();
+
+  expect(_checkEnfantsCount(ec(0, 2, 1), 1)).toBeUndefined();
+  expect(_checkEnfantsCount(ec(0, 4, 0), 1)?.kind).toBe(
+    CheckKind.MissingProForEnfants
+  );
+  expect(_checkEnfantsCount(ec(0, 2, 2), 1)?.kind).toBe(
+    CheckKind.MissingProForEnfants
+  );
+
   expect(_checkEnfantsCount(ec(2, 0, 0), 1)?.kind).toBe(
     CheckKind.MissingProAdaption
   );
