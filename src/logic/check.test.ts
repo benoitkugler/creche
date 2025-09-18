@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import {
   _checkNombreEnfants as _checkEnfantsCount,
+  _checkRepos,
   _checkReunion,
   _normalizeEnfants,
   _normalizePros,
@@ -12,9 +13,9 @@ import {
 import type { Enfant } from "./enfants";
 import {
   computeDate,
-  emptyRange,
   HeureMax,
   HeureMin,
+  Range,
   type Heure,
   type int,
   type Minute
@@ -49,8 +50,8 @@ test("normalize enfants", () => {
         creneaux: [
           [
             null,
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: true },
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: true },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             null,
             null
           ]
@@ -61,8 +62,8 @@ test("normalize enfants", () => {
         creneaux: [
           [
             null,
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             null,
             null
           ]
@@ -73,8 +74,8 @@ test("normalize enfants", () => {
         creneaux: [
           [
             null,
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
-            { debut: h(6, 10), fin: h(6, 40), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 40)), isAdaptation: false },
             null,
             null
           ]
@@ -115,24 +116,24 @@ test("normalize pros", () => {
             pro,
             horaires: [
               {
-                presence: { debut: h(6, 0), fin: h(12, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(12, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(12, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(12, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(12, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               }
             ]
           },
@@ -140,24 +141,24 @@ test("normalize pros", () => {
             pro,
             horaires: [
               {
-                presence: { debut: h(6, 0), fin: h(18, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(18, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(18, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(18, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: { debut: h(6, 0), fin: h(18, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               }
             ]
           }
@@ -236,24 +237,24 @@ test("check reunion1", () => {
             pro,
             horaires: [
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: { debut: h(6, 0), fin: h(16, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               }
             ]
           },
@@ -261,24 +262,24 @@ test("check reunion1", () => {
             pro,
             horaires: [
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: { debut: h(6, 0), fin: h(16, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               }
             ]
           }
@@ -291,24 +292,24 @@ test("check reunion1", () => {
             pro,
             horaires: [
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: { debut: h(6, 0), fin: h(16, 0) },
-                pause: { debut: h(10, 30), fin: h(11, 0) }
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               }
             ]
           },
@@ -316,24 +317,24 @@ test("check reunion1", () => {
             pro,
             horaires: [
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: { debut: h(6, 0), fin: h(16, 0) },
-                pause: { debut: h(10, 30), fin: h(14, 0) }
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(14, 0))
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               },
               {
-                presence: emptyRange(),
-                pause: emptyRange()
+                presence: Range.empty(),
+                pause: Range.empty()
               }
             ]
           }
@@ -345,7 +346,51 @@ test("check reunion1", () => {
   const diag = _checkReunion(planning);
   expect(diag).not.toBeUndefined();
   expect(diag!.check.kind).toBe(CheckKind.MissingProAtReunion);
+  if (diag?.check.kind != CheckKind.MissingProAtReunion) return;
   expect(diag!.check.expect).toBe(2);
   expect(diag!.check.got).toBe(1);
   expect(diag!.date.toISOString()).toBe("2025-09-09T13:30:00.000Z");
+});
+
+test("check repos", () => {
+  const planning: PlanningPros = {
+    firstMonday: new Date(2025, 8, 1),
+    semaines: [
+      {
+        semaine: 1,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: new Range(h(6, 0), h(20, 15)),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(7, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(20, 0)),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(7, 0), h(16, 0)), // just enough !
+                pause: Range.empty()
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+  const diags = _checkRepos(planning);
+  expect(diags).toHaveLength(1);
+  expect(diags[0].check.kind).toBe(CheckKind.NotEnoughSleep);
+  if (diags[0].check.kind != CheckKind.NotEnoughSleep) return;
+  expect(diags[0].check.expectedLendemain).toEqual(h(7, 15));
 });

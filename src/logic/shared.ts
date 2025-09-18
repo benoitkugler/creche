@@ -5,13 +5,28 @@ export type Horaire = {
   minute: Minute;
 };
 
-export type Range = {
-  debut: Horaire;
-  fin: Horaire;
-};
+/** returns true if h1 <= h2 */
+export function isBefore(h1: Horaire, h2: Horaire) {
+  return (
+    h1.heure < h2.heure || (h1.heure == h2.heure && h1.minute <= h2.minute)
+  );
+}
 
-export function emptyRange(): Range {
-  return { debut: { heure: 12, minute: 0 }, fin: { heure: 12, minute: 0 } };
+export class Range {
+  constructor(public debut: Horaire, public fin: Horaire) {}
+
+  static empty() {
+    return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
+  }
+
+  isEmpty() {
+    return isBefore(this.fin, this.debut);
+  }
+
+  /** returns true if other is (fully) included in this range */
+  includes(other: Range) {
+    return isBefore(this.debut, other.debut) && isBefore(other.fin, this.fin);
+  }
 }
 
 export type Minute = 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55;
@@ -53,7 +68,16 @@ export function isMinute(v: int): Minute | null {
 // du lundi au vendredi
 export type SemaineOf<T> = [T, T, T, T, T];
 
-export type error = string;
+export type error = { _err: string };
+
+export function newError(err: string): error {
+  return { _err: err };
+}
+
+export function isError<T>(v: T | error): v is error {
+  if (typeof v !== "object" || v === null) return false;
+  return "_err" in v;
+}
 
 export function computeDate(
   firstMonday: Date,

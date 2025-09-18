@@ -1,11 +1,12 @@
 import type { CellValue, Row } from "read-excel-file";
 import {
-  emptyRange,
+  isError,
   isHeure,
   isMinute,
+  newError,
+  Range,
   type error,
   type int,
-  type Range,
   type SemaineOf
 } from "./shared";
 
@@ -13,20 +14,14 @@ export type Pro = {
   prenom: string;
 };
 
-type HoraireTravail = {
+export type HoraireTravail = {
   presence: Range;
   pause: Range;
 };
 
 type SemainePro = {
   pro: Pro;
-  horaires: [
-    HoraireTravail,
-    HoraireTravail,
-    HoraireTravail,
-    HoraireTravail,
-    HoraireTravail
-  ];
+  horaires: SemaineOf<HoraireTravail>;
 };
 
 type PlanningProsSemaine = {
@@ -49,7 +44,7 @@ export namespace Pros {
   export function parseExcel(
     rows: Row[],
     firstMonday: Date
-  ): [PlanningPros, error] {
+  ): PlanningPros | error {
     const out: PlanningPros = { firstMonday, semaines: [] };
     let currentWeek: PlanningProsSemaine = { semaine: -1, prosHoraires: [] };
 
@@ -61,8 +56,8 @@ export namespace Pros {
       const firstCell = row[0];
       if (typeof firstCell != "string") continue;
       if (firstCell.toLowerCase().includes("semaine")) {
-        const [semaine, err] = parseSemaine(firstCell, firstMonday);
-        if (err.length) return [out, err];
+        const semaine = parseSemaine(firstCell, firstMonday);
+        if (isError(semaine)) return semaine;
 
         // flush the current week if any
         if (currentWeek.semaine != -1) {
@@ -73,11 +68,10 @@ export namespace Pros {
         // this is a pro !
         // fetch the next line
         index += 1;
-        if (index >= rows.length) return [out, "Ligne de pauses manquantes."];
+        if (index >= rows.length)
+          return newError("Ligne de pauses manquantes.");
         const res = parseHorairesPros(row, rows[index]);
-        if (typeof res == "string") {
-          return [out, res];
-        }
+        if (isError(res)) return res;
         currentWeek.prosHoraires.push(res);
       }
     }
@@ -87,69 +81,81 @@ export namespace Pros {
       out.semaines.push(currentWeek);
     }
 
-    return [out, ""];
+    return out;
   }
 }
 
-function parseSemaine(firstCell: string, firstMonday: Date): [int, string] {
+function parseSemaine(firstCell: string, firstMonday: Date): int | error {
   const reSemaine =
     /semaine\s*\d+\s*du\s*(\d+)\/(\d+)\s*au\s*(\d+)\/(\d+)\/(\d+)/i;
   const match = reSemaine.exec(firstCell);
-  if (match === null) return [0, "Format de la cellule 'Semaine...' invalide."];
+  if (match === null)
+    return newError("Format de la cellule 'Semaine...' invalide.");
   const firstDay = Number(match[1]);
   const firstMonth = Number(match[2]) - 1;
   const lastDay = Number(match[3]);
   const lastMonth = Number(match[4]) - 1;
   const lastYear = Number(match[5]);
-  if (lastYear >= 1000) return [0, "Date invalide."];
+  if (lastYear >= 1000) return newError("Date invalide.");
   const last = new Date(2000 + lastYear, lastMonth, lastDay);
   if (last.getDay() != 5)
-    return [0, "Dernier jour invalide (vendredi attendu)."];
+    return newError("Dernier jour invalide (vendredi attendu).");
   const first = new Date(last.getTime());
   first.setDate(first.getDate() - 4);
   if (first.getDate() != firstDay || first.getMonth() != firstMonth) {
-    return [0, "Premier jour invalide."];
+    return newError("Premier jour invalide.");
   }
   const semaine =
     (first.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24 * 7);
   if (semaine < 0) {
-    return [0, "Semaine antérieure au début du planning enfants."];
+    return newError("Semaine antérieure au début du planning enfants.");
   }
-  return [semaine, ""];
+  return semaine;
 }
 
 function parseHorairesPros(row: Row, pauses: Row): SemainePro | error {
   if (row.length < 10 || pauses.length < 10) {
-    return "Ligne trop courte.";
+    return newError("Ligne trop courte.");
   }
   const pro: Pro = { prenom: (row[0] as string).trim() };
-  const horaires = [
-    parseHorairesDay(row[1], pauses[1]),
-    parseHorairesDay(row[3], pauses[3]),
-    parseHorairesDay(row[5], pauses[5]),
-    parseHorairesDay(row[7], pauses[7]),
-    parseHorairesDay(row[9], pauses[9])
-  ] as SemaineOf<HoraireTravail>;
-  return { pro, horaires };
+  const d1 = parseHorairesDay(row[1], pauses[1]);
+  if (isError(d1)) return d1;
+  const d2 = parseHorairesDay(row[3], pauses[3]);
+  if (isError(d2)) return d2;
+  const d3 = parseHorairesDay(row[5], pauses[5]);
+  if (isError(d3)) return d3;
+  const d4 = parseHorairesDay(row[7], pauses[7]);
+  if (isError(d4)) return d4;
+  const d5 = parseHorairesDay(row[9], pauses[9]);
+  if (isError(d5)) return d5;
+
+  return { pro, horaires: [d1, d2, d3, d4, d5] };
 }
 
 function parseHorairesDay(
   presence: CellValue,
   pause: CellValue
-): HoraireTravail {
-  return {
-    presence: parseIntervalle(presence),
-    pause: parseIntervalle(pause)
-  };
+): HoraireTravail | error {
+  const presenceI = parseIntervalle(presence);
+  if (isError(presenceI)) return presenceI;
+  const pauseI = parseIntervalle(pause);
+  if (isError(pauseI)) return pauseI;
+
+  // check inclusion
+  if (!presenceI.includes(pauseI))
+    return newError("Pause non comprise dans les horaires de travail.");
+  return { presence: presenceI, pause: pauseI };
 }
 
-function parseIntervalle(cell: CellValue): Range {
+function parseIntervalle(cell: CellValue): Range | error {
   if (typeof cell != "string" || cell.length == 0) {
-    return emptyRange();
+    return Range.empty();
   }
   const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
   const match = reHoraire.exec(cell);
-  if (match === null) return emptyRange();
+  if (match === null) {
+    return newError("Format d'horaire invalide");
+  }
   const debutHour = isHeure(Number(match[1]));
   const debutMinute = isMinute(Number(match[2]));
   const finHour = isHeure(Number(match[3]));
@@ -160,10 +166,10 @@ function parseIntervalle(cell: CellValue): Range {
     finHour == null ||
     finMinute == null
   ) {
-    return emptyRange();
+    return newError("Valeurs d'horaire non supportées");
   }
-  return {
-    debut: { heure: debutHour, minute: debutMinute },
-    fin: { heure: finHour, minute: finMinute }
-  };
+  return new Range(
+    { heure: debutHour, minute: debutMinute },
+    { heure: finHour, minute: finMinute }
+  );
 }

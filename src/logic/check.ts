@@ -1,13 +1,15 @@
+import { id } from "vuetify/locale";
 import { Enfants, type PlanningEnfants } from "./enfants";
-import { Pros, type PlanningPros } from "./personnel";
+import { Pros, type HoraireTravail, type PlanningPros } from "./personnel";
 import {
   computeDate,
   HeureMax,
   HeureMin,
+  isBefore,
+  Range,
   type Heure,
   type Horaire,
   type int,
-  type Range,
   type Minute,
   type SemaineOf
 } from "./shared";
@@ -18,6 +20,28 @@ const nonMarcheursParPro = 3;
 // TODO: que faire d'un groupe mixte avec une seule pro ?
 
 type Diagnostic = { date: Date; check: Check };
+
+export const CheckKind = {
+  MissingProAdaption: 0,
+  MissingProForEnfants: 1,
+  MissingProAtReunion: 2,
+  NotEnoughSleep: 3
+} as const;
+export type DiagnosticKind = (typeof CheckKind)[keyof typeof CheckKind];
+
+type Check =
+  | ({
+      kind: (typeof CheckKind)["MissingProAdaption"];
+    } & MissingProAdaption)
+  | ({
+      kind: (typeof CheckKind)["MissingProForEnfants"];
+    } & MissingProForEnfants)
+  | ({
+      kind: (typeof CheckKind)["MissingProAtReunion"];
+    } & MissingProAtReunion)
+  | ({
+      kind: (typeof CheckKind)["NotEnoughSleep"];
+    } & NotEnoughSleep);
 
 /** `check` analyze les données fournies et s'assure qu'il y a
  * suffisament de pros à tout moment de la journée.
@@ -85,8 +109,8 @@ export function _normalizeEnfants(input: PlanningEnfants): Grid<_EnfantsCount> {
       semaine.forEach((day, iDay) => {
         if (day === null) return;
         const currentDay = out[iSemaine][iDay];
-        const indexDebut = horaireToIndex(day.debut);
-        const indexFin = horaireToIndex(day.fin);
+        const indexDebut = horaireToIndex(day.horaires.debut);
+        const indexFin = horaireToIndex(day.horaires.fin);
         for (let index = indexDebut; index < indexFin; index++) {
           if (day.isAdaptation) {
             currentDay[index].adaptionCount += 1;
@@ -143,27 +167,8 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
   return out;
 }
 
-export const CheckKind = {
-  MissingProAdaption: 0,
-  MissingProForEnfants: 1,
-  MissingProAtReunion: 2
-} as const;
-export type DiagnosticKind = (typeof CheckKind)[keyof typeof CheckKind];
-
-type Check =
-  | ({
-      kind: (typeof CheckKind)["MissingProAdaption"];
-    } & MissingProAdaption)
-  | ({
-      kind: (typeof CheckKind)["MissingProForEnfants"];
-    } & MissingProForEnfants)
-  | ({
-      kind: (typeof CheckKind)["MissingProAtReunion"];
-    } & MissingProAtReunion);
-
 type MissingProAdaption = { got: int; expect: int };
 type MissingProForEnfants = { got: int; expect: int };
-type MissingProAtReunion = { got: int; expect: int };
 
 // TODO: check and document the rules
 export function _checkNombreEnfants(
@@ -219,12 +224,14 @@ export function _checkNombreEnfants(
   return;
 }
 
+type MissingProAtReunion = { got: int; expect: int };
+
 export function _checkReunion(pros: PlanningPros): Diagnostic | undefined {
   const reunionDayIndex = 1; // index in week, mardi
-  const horaireReunion: Range = {
-    debut: { heure: 13, minute: 30 },
-    fin: { heure: 14, minute: 30 }
-  };
+  const horaireReunion = new Range(
+    { heure: 13, minute: 30 },
+    { heure: 14, minute: 30 }
+  );
 
   const grid = _normalizePros(pros);
   for (const semaine of pros.semaines) {
@@ -256,4 +263,51 @@ export function _checkReunion(pros: PlanningPros): Diagnostic | undefined {
 
   // all good
   return;
+}
+
+type NotEnoughSleep = { expectedLendemain: Horaire; gotLendemain: Horaire };
+
+export function _checkRepos(pros: PlanningPros): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  for (const semaine of pros.semaines) {
+    for (const pro of semaine.prosHoraires) {
+      for (let iDay = 0; iDay < 4; iDay++) {
+        const c = _checkReposNight(
+          pro.horaires[iDay].presence,
+          pro.horaires[iDay + 1].presence
+        );
+        if (c === undefined) continue;
+        out.push({
+          date: computeDate(
+            pros.firstMonday,
+            semaine.semaine,
+            iDay,
+            pro.horaires[iDay].presence.fin
+          ),
+          check: { kind: CheckKind.NotEnoughSleep, ...c }
+        });
+      }
+    }
+  }
+  return out;
+}
+
+function _checkReposNight(
+  day: Range,
+  following: Range
+): NotEnoughSleep | undefined {
+  if (day.isEmpty() || following.isEmpty()) {
+    // empty day, all good !
+    return;
+  }
+  const expectedRepos = 11; // heures
+  const lendemain: Horaire = {
+    heure: (day.fin.heure + expectedRepos - 24) as Heure,
+    minute: day.fin.minute
+  };
+  if (isBefore(lendemain, following.debut)) {
+    // all good!
+    return;
+  }
+  return { expectedLendemain: lendemain, gotLendemain: following.debut };
 }

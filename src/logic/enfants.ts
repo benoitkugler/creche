@@ -6,7 +6,7 @@ export type Enfant = {
   isMarcheur: boolean;
 };
 
-type CreneauEnfant = Range & { isAdaptation: boolean };
+type CreneauEnfant = { horaires: Range; isAdaptation: boolean };
 
 type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
 
