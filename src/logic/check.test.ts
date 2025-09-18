@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import {
   _checkNombreEnfants as _checkEnfantsCount,
+  _checkProsDepartArrivee as _checkProsArrivals,
   _checkRepos,
   _checkReunion,
   _normalizeEnfants,
@@ -339,17 +340,73 @@ test("check reunion1", () => {
             ]
           }
         ]
+      },
+
+      {
+        semaine: 2,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          },
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(14, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          }
+        ]
       }
     ]
   };
 
   const diag = _checkReunion(planning);
-  expect(diag).not.toBeUndefined();
-  expect(diag!.check.kind).toBe(CheckKind.MissingProAtReunion);
-  if (diag?.check.kind != CheckKind.MissingProAtReunion) return;
-  expect(diag!.check.expect).toBe(2);
-  expect(diag!.check.got).toBe(1);
-  expect(diag!.date.toISOString()).toBe("2025-09-09T13:30:00.000Z");
+  expect(diag).toHaveLength(2);
+  expect(diag[0].check.kind).toBe(CheckKind.MissingProAtReunion);
+  if (diag[0].check.kind != CheckKind.MissingProAtReunion) return;
+  expect(diag[0].check.expect).toBe(2);
+  expect(diag[0].check.got).toBe(1);
+  expect(diag[0].date.toISOString()).toBe("2025-09-09T13:30:00.000Z");
 });
 
 test("check repos", () => {
@@ -393,4 +450,40 @@ test("check repos", () => {
   expect(diags[0].check.kind).toBe(CheckKind.NotEnoughSleep);
   if (diags[0].check.kind != CheckKind.NotEnoughSleep) return;
   expect(diags[0].check.expectedLendemain).toEqual(h(7, 15));
+});
+
+test("check pro arrival", () => {
+  const enfants2 = [
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 1, 0),
+    ec(0, 1, 0)
+  ];
+  expect(_checkProsArrivals(enfants2, [0, 1, 1, 1, 1, 1])).toHaveLength(0);
+  expect(_checkProsArrivals(enfants2, [0, 2, 1, 1, 1, 1])).toHaveLength(0);
+  expect(_checkProsArrivals(enfants2, [1, 2, 1, 1, 1, 1])).toHaveLength(1);
+  expect(_checkProsArrivals(enfants2, [0, 0, 1, 1, 1, 1])).toHaveLength(1);
+
+  // with more than 5
+  const enfants5 = [
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 1, 0),
+    ec(0, 2, 1),
+    ec(0, 2, 1),
+    ec(0, 2, 3)
+  ];
+  expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 2, 2, 2, 2])).toHaveLength(
+    0
+  );
+  expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 1, 2, 2, 2])).toHaveLength(
+    1
+  );
+  expect(_checkProsArrivals(enfants5, [0, 0, 1, 1, 1, 2, 2, 2])).toHaveLength(
+    2
+  );
 });

@@ -61,13 +61,17 @@ export function check(
 const gridLength = 12 * (HeureMax - HeureMin);
 
 export function horaireToIndex(h: Horaire) {
-  return (h.heure - HeureMin) * 12 + h.minute / 5;
+  return (h.heure - HeureMin) * 12 + minutesToIndex(h.minute);
 }
 
-export function indexToHoraire(index: number): Horaire {
+export function indexToHoraire(index: int): Horaire {
   const heure = Math.floor(index / 12);
   const minute = index % 12;
   return { heure: (HeureMin + heure) as Heure, minute: (minute * 5) as Minute };
+}
+
+function minutesToIndex(m: Minute): int {
+  return m / 5;
 }
 
 // semaine -> jour -> découpage by 5min
@@ -224,14 +228,67 @@ export function _checkNombreEnfants(
   return;
 }
 
+type WrongDepartArriveePro = {
+  time: "first-arrival" | "second-arrival" | "last-go";
+  expected: Horaire;
+  got: Horaire;
+};
+
+// Enf3 : La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.
+// Enf4 : Une et une seule pro reste 15 min après le dernier enfant.
+export function _checkProsDepartArrivee(enfants: _EnfantsCount[], pros: int[]) {
+  const out: WrongDepartArriveePro[] = [];
+
+  // first arrival
+  const indexFirstChild = enfants.findIndex(
+    c => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
+  );
+  // if there is no kids, all good !
+  if (indexFirstChild == -1) return;
+
+  const expectedFirstPro = indexFirstChild - minutesToIndex(15);
+  const indexFirstPro = pros.findIndex(p => p != 0);
+  if (expectedFirstPro != indexFirstPro) {
+    out.push({
+      time: "first-arrival",
+      expected: indexToHoraire(expectedFirstPro),
+      got: indexToHoraire(indexFirstPro)
+    });
+  }
+
+  // second arrival
+  const indexFourthChild = enfants.findIndex(
+    c => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount >= 4
+  );
+  if (indexFourthChild != -1) {
+    const expectedSecondPro = indexFourthChild - minutesToIndex(15);
+    const indexSecondPro = pros.findIndex(p => p >= 2);
+    if (expectedSecondPro != indexSecondPro) {
+      out.push({
+        time: "second-arrival",
+        expected: indexToHoraire(expectedSecondPro),
+        got: indexToHoraire(indexSecondPro)
+      });
+    }
+  }
+
+  const indexLastChild = enfants.findLastIndex(
+    c => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
+  );
+
+  return out;
+}
+
 type MissingProAtReunion = { got: int; expect: int };
 
-export function _checkReunion(pros: PlanningPros): Diagnostic | undefined {
+export function _checkReunion(pros: PlanningPros): Diagnostic[] {
   const reunionDayIndex = 1; // index in week, mardi
   const horaireReunion = new Range(
     { heure: 13, minute: 30 },
     { heure: 14, minute: 30 }
   );
+
+  const out: Diagnostic[] = [];
 
   const grid = _normalizePros(pros);
   for (const semaine of pros.semaines) {
@@ -244,7 +301,7 @@ export function _checkReunion(pros: PlanningPros): Diagnostic | undefined {
       const prosPresent = reunionDay[index];
       if (prosPresent < prosCount) {
         const horaire = indexToHoraire(index);
-        return {
+        out.push({
           date: computeDate(
             pros.firstMonday,
             semaine.semaine,
@@ -256,13 +313,13 @@ export function _checkReunion(pros: PlanningPros): Diagnostic | undefined {
             expect: prosCount,
             got: prosPresent
           }
-        };
+        });
+        break; // only one diagnostic per week
       }
     }
   }
 
-  // all good
-  return;
+  return out;
 }
 
 type NotEnoughSleep = { expectedLendemain: Horaire; gotLendemain: Horaire };
