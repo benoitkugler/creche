@@ -6,7 +6,7 @@ import { isError, Range } from "./shared";
 test("parse personnel", async () => {
   const file = Bun.file("src/logic/sample_personnel.xlsx");
   const rows = await readXlsxFile(file);
-  const planning = Pros.parseExcel(rows, new Date(2025, 7, 18));
+  const planning = Pros.parseExcelPros(rows, new Date(2025, 7, 18));
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
 

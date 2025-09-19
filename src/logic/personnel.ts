@@ -4,6 +4,7 @@ import {
   isHeure,
   isMinute,
   newError,
+  parseRange,
   Range,
   type error,
   type int,
@@ -41,7 +42,7 @@ export namespace Pros {
   }
 
   /** You should use `readXlsxFile` to produce rows */
-  export function parseExcel(
+  export function parseExcelPros(
     rows: Row[],
     firstMonday: Date
   ): PlanningPros | error {
@@ -136,9 +137,9 @@ function parseHorairesDay(
   presence: CellValue,
   pause: CellValue
 ): HoraireTravail | error {
-  const presenceI = parseIntervalle(presence);
+  const presenceI = parseRangeOrEmpty(presence);
   if (isError(presenceI)) return presenceI;
-  const pauseI = parseIntervalle(pause);
+  const pauseI = parseRangeOrEmpty(pause);
   if (isError(pauseI)) return pauseI;
 
   // check inclusion
@@ -147,29 +148,9 @@ function parseHorairesDay(
   return { presence: presenceI, pause: pauseI };
 }
 
-function parseIntervalle(cell: CellValue): Range | error {
+function parseRangeOrEmpty(cell: CellValue): Range | error {
   if (typeof cell != "string" || cell.length == 0) {
     return Range.empty();
   }
-  const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
-  const match = reHoraire.exec(cell);
-  if (match === null) {
-    return newError("Format d'horaire invalide");
-  }
-  const debutHour = isHeure(Number(match[1]));
-  const debutMinute = isMinute(Number(match[2]));
-  const finHour = isHeure(Number(match[3]));
-  const finMinute = isMinute(Number(match[4]));
-  if (
-    debutHour == null ||
-    debutMinute == null ||
-    finHour == null ||
-    finMinute == null
-  ) {
-    return newError("Valeurs d'horaire non supportées");
-  }
-  return new Range(
-    { heure: debutHour, minute: debutMinute },
-    { heure: finHour, minute: finMinute }
-  );
+  return parseRange(cell)
 }

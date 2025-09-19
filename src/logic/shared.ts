@@ -13,7 +13,7 @@ export function isBefore(h1: Horaire, h2: Horaire) {
 }
 
 export class Range {
-  constructor(public debut: Horaire, public fin: Horaire) {}
+  constructor(public debut: Horaire, public fin: Horaire) { }
 
   static empty() {
     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
@@ -28,6 +28,32 @@ export class Range {
     return isBefore(this.debut, other.debut) && isBefore(other.fin, this.fin);
   }
 }
+
+// accept dd:dd dd:dd
+export function parseRange(cell: string): Range | error {
+  const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
+  const match = reHoraire.exec(cell);
+  if (match === null) {
+    return newError("Format d'horaire invalide");
+  }
+  const debutHour = isHeure(Number(match[1]));
+  const debutMinute = isMinute(Number(match[2]));
+  const finHour = isHeure(Number(match[3]));
+  const finMinute = isMinute(Number(match[4]));
+  if (
+    debutHour == null ||
+    debutMinute == null ||
+    finHour == null ||
+    finMinute == null
+  ) {
+    return newError("Valeurs d'horaire non supportées");
+  }
+  return new Range(
+    { heure: debutHour, minute: debutMinute },
+    { heure: finHour, minute: finMinute }
+  );
+}
+
 
 export type Minute = 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55;
 export type Heure =
@@ -91,9 +117,9 @@ export function computeDate(
   const semaineC = 7 * dayC;
   return new Date(
     firstMonday.getTime() +
-      semaine * semaineC +
-      day * dayC +
-      horaire.heure * heureC +
-      horaire.minute * minutesC
+    semaine * semaineC +
+    day * dayC +
+    horaire.heure * heureC +
+    horaire.minute * minutesC
   );
 }
