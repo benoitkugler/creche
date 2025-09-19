@@ -5,10 +5,29 @@ export type Horaire = {
   minute: Minute;
 };
 
-export type Intervalle = {
-  debut: Horaire;
-  fin: Horaire;
-};
+/** returns true if h1 <= h2 */
+export function isBefore(h1: Horaire, h2: Horaire) {
+  return (
+    h1.heure < h2.heure || (h1.heure == h2.heure && h1.minute <= h2.minute)
+  );
+}
+
+export class Range {
+  constructor(public debut: Horaire, public fin: Horaire) {}
+
+  static empty() {
+    return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
+  }
+
+  isEmpty() {
+    return isBefore(this.fin, this.debut);
+  }
+
+  /** returns true if other is (fully) included in this range */
+  includes(other: Range) {
+    return isBefore(this.debut, other.debut) && isBefore(other.fin, this.fin);
+  }
+}
 
 export type Minute = 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55;
 export type Heure =
@@ -29,8 +48,52 @@ export type Heure =
   | 20
   | 21;
 
-export const HeureMin = 6;
-export const HeureMax = 22;
+export const HeureMin = 6; // inclus
+export const HeureMax = 22; // exclus
+
+export function isHeure(v: int): Heure | null {
+  if (HeureMin <= v && v < HeureMax) {
+    return v as Heure;
+  }
+  return null;
+}
+
+export function isMinute(v: int): Minute | null {
+  if (0 <= v && v <= 55 && v % 5 == 0) {
+    return v as Minute;
+  }
+  return null;
+}
 
 // du lundi au vendredi
 export type SemaineOf<T> = [T, T, T, T, T];
+
+export type error = { _err: string };
+
+export function newError(err: string): error {
+  return { _err: err };
+}
+
+export function isError<T>(v: T | error): v is error {
+  if (typeof v !== "object" || v === null) return false;
+  return "_err" in v;
+}
+
+export function computeDate(
+  firstMonday: Date,
+  semaine: int,
+  day: int,
+  horaire: Horaire
+) {
+  const minutesC = 60 * 1000;
+  const heureC = 60 * minutesC;
+  const dayC = 24 * heureC;
+  const semaineC = 7 * dayC;
+  return new Date(
+    firstMonday.getTime() +
+      semaine * semaineC +
+      day * dayC +
+      horaire.heure * heureC +
+      horaire.minute * minutesC
+  );
+}

@@ -1,22 +1,27 @@
 import { expect, test } from "bun:test";
 import {
   _checkNombreEnfants as _checkEnfantsCount,
+  _checkProsDepartArrivee as _checkProsArrivals,
+  _checkRepos,
+  _checkReunion,
   _normalizeEnfants,
   _normalizePros,
-  DiagnosticKind,
+  CheckKind,
   horaireToIndex,
   zeroPresenceEnfants,
   type _EnfantsCount
 } from "./check";
 import type { Enfant } from "./enfants";
 import {
+  computeDate,
   HeureMax,
   HeureMin,
+  Range,
   type Heure,
   type int,
   type Minute
 } from "./shared";
-import type { Pro } from "./personnel";
+import type { PlanningPros, Pro } from "./personnel";
 
 const enfantMarcheur: Enfant = {
   nom: "Benoit",
@@ -46,8 +51,8 @@ test("normalize enfants", () => {
         creneaux: [
           [
             null,
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: true },
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: true },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             null,
             null
           ]
@@ -58,8 +63,8 @@ test("normalize enfants", () => {
         creneaux: [
           [
             null,
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             null,
             null
           ]
@@ -70,8 +75,8 @@ test("normalize enfants", () => {
         creneaux: [
           [
             null,
-            { debut: h(6, 10), fin: h(6, 30), isAdaptation: false },
-            { debut: h(6, 10), fin: h(6, 40), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
+            { horaires: new Range(h(6, 10), h(6, 40)), isAdaptation: false },
             null,
             null
           ]
@@ -102,63 +107,66 @@ test("normalize enfants", () => {
 });
 
 test("normalize pros", () => {
-  const grid = _normalizePros([
-    {
-      semaine: 1,
-      horaires: [
-        {
-          pro,
-          horaires: [
-            {
-              presence: { debut: h(6, 0), fin: h(12, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(12, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(12, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(12, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(12, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            }
-          ]
-        },
-        {
-          pro,
-          horaires: [
-            {
-              presence: { debut: h(6, 0), fin: h(18, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(18, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(18, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(18, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            },
-            {
-              presence: { debut: h(6, 0), fin: h(18, 0) },
-              pause: { debut: h(10, 30), fin: h(11, 0) }
-            }
-          ]
-        }
-      ]
-    }
-  ]);
+  const grid = _normalizePros({
+    firstMonday: new Date(),
+    semaines: [
+      {
+        semaine: 1,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(12, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              }
+            ]
+          },
+          {
+            pro,
+            horaires: [
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  });
 
   expect(grid[0][0].length).toBe(12 * (HeureMax - HeureMin));
   const day = grid[1][0];
@@ -180,20 +188,302 @@ test("check enfants count", () => {
   expect(_checkEnfantsCount(ec(0, 0, 0), 0)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 0, 0), 1)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 0, 0), 3)).toBeUndefined();
+
+  expect(_checkEnfantsCount(ec(0, 2, 1), 1)).toBeUndefined();
+  expect(_checkEnfantsCount(ec(0, 4, 0), 1)?.kind).toBe(
+    CheckKind.MissingProForEnfants
+  );
+  expect(_checkEnfantsCount(ec(0, 2, 2), 1)?.kind).toBe(
+    CheckKind.MissingProForEnfants
+  );
+
   expect(_checkEnfantsCount(ec(2, 0, 0), 1)?.kind).toBe(
-    DiagnosticKind.MissingProAdaption
+    CheckKind.MissingProAdaption
   );
   expect(_checkEnfantsCount(ec(1, 3, 0), 3)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 16, 0), 3)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 17, 0), 3)?.kind).toBe(
-    DiagnosticKind.MissingProForEnfants
+    CheckKind.MissingProForEnfants
   );
   expect(_checkEnfantsCount(ec(1, 0, 6), 3)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 0, 7), 3)?.kind).toBe(
-    DiagnosticKind.MissingProForEnfants
+    CheckKind.MissingProForEnfants
   );
   expect(_checkEnfantsCount(ec(1, 2, 4), 3)).toBeUndefined();
   expect(_checkEnfantsCount(ec(1, 3, 4), 3)?.kind).toBe(
-    DiagnosticKind.MissingProForEnfants
+    CheckKind.MissingProForEnfants
+  );
+});
+
+test("date", () => {
+  expect(computeDate(new Date(2025, 8, 1), 0, 0, h(6, 25)).toISOString()).toBe(
+    "2025-09-01T06:25:00.000Z"
+  );
+  expect(computeDate(new Date(2025, 8, 1), 0, 1, h(6, 0)).toISOString()).toBe(
+    "2025-09-02T06:00:00.000Z"
+  );
+  expect(computeDate(new Date(2025, 8, 1), 1, 1, h(6, 0)).toISOString()).toBe(
+    "2025-09-09T06:00:00.000Z"
+  );
+});
+
+test("check reunion1", () => {
+  const planning: PlanningPros = {
+    firstMonday: new Date(2025, 8, 1),
+    semaines: [
+      {
+        semaine: 0,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          },
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          }
+        ]
+      },
+      {
+        semaine: 1,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          },
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(14, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        semaine: 2,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          },
+          {
+            pro,
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(14, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
+  const diag = _checkReunion(planning);
+  expect(diag).toHaveLength(2);
+  expect(diag[0].check.kind).toBe(CheckKind.MissingProAtReunion);
+  if (diag[0].check.kind != CheckKind.MissingProAtReunion) return;
+  expect(diag[0].check.expect).toBe(2);
+  expect(diag[0].check.got).toBe(1);
+  expect(diag[0].date.toISOString()).toBe("2025-09-09T13:30:00.000Z");
+});
+
+test("check repos", () => {
+  const planning: PlanningPros = {
+    firstMonday: new Date(2025, 8, 1),
+    semaines: [
+      {
+        semaine: 1,
+        prosHoraires: [
+          {
+            pro,
+            horaires: [
+              {
+                presence: new Range(h(6, 0), h(20, 15)),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(7, 0), h(16, 0)),
+                pause: new Range(h(10, 30), h(11, 0))
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(6, 0), h(20, 0)),
+                pause: Range.empty()
+              },
+              {
+                presence: new Range(h(7, 0), h(16, 0)), // just enough !
+                pause: Range.empty()
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+  const diags = _checkRepos(planning);
+  expect(diags).toHaveLength(1);
+  expect(diags[0].check.kind).toBe(CheckKind.NotEnoughSleep);
+  if (diags[0].check.kind != CheckKind.NotEnoughSleep) return;
+  expect(diags[0].check.expectedLendemain).toEqual(h(7, 15));
+});
+
+test("check pro arrival", () => {
+  const enfants2 = [
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 1, 0),
+    ec(0, 1, 0)
+  ];
+  expect(_checkProsArrivals(enfants2, [0, 1, 1, 1, 1, 1])).toHaveLength(0);
+  expect(_checkProsArrivals(enfants2, [0, 2, 1, 1, 1, 1])).toHaveLength(0);
+  expect(_checkProsArrivals(enfants2, [1, 2, 1, 1, 1, 1])).toHaveLength(1);
+  expect(_checkProsArrivals(enfants2, [0, 0, 1, 1, 1, 1])).toHaveLength(1);
+
+  // with more than 5
+  const enfants5 = [
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 1, 0),
+    ec(0, 2, 1),
+    ec(0, 2, 1),
+    ec(0, 2, 3)
+  ];
+  expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 2, 2, 2, 2])).toHaveLength(
+    0
+  );
+  expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 1, 2, 2, 2])).toHaveLength(
+    1
+  );
+  expect(_checkProsArrivals(enfants5, [0, 0, 1, 1, 1, 2, 2, 2])).toHaveLength(
+    2
   );
 });

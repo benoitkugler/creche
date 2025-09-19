@@ -1,4 +1,4 @@
-import type { Intervalle, SemaineOf } from "./shared";
+import type { Range, SemaineOf } from "./shared";
 
 export type Enfant = {
   nom: string;
@@ -6,7 +6,7 @@ export type Enfant = {
   isMarcheur: boolean;
 };
 
-type CreneauEnfant = Intervalle & { isAdaptation: boolean };
+type CreneauEnfant = { horaires: Range; isAdaptation: boolean };
 
 type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
 
