@@ -1,5 +1,4 @@
-import { log } from "console";
-import { error, isError, newError, parseRange, type Range, type SemaineOf } from "./shared";
+import { type error, isError, newError, parseRange, type Range, type SemaineOf } from "./shared";
 
 export type Enfant = {
   nom: string;
@@ -21,71 +20,73 @@ export namespace Enfants {
   export function semaineCount(input: PlanningEnfants) {
     return Math.max(...input.enfants.map(e => e.creneaux.length));
   }
+
+  export function parsePDFEnfants(texts: TextBlock[]): PlanningEnfants | error {
+    if (!texts[0].Text.includes("PLANNING MENSUEL")) return newError("Document invalide.")
+    const t = parseMonth(texts[0].Text)
+    if (isError(t)) return t
+
+    texts = texts.slice(1)
+    const [header, ...rows] = detectRows(texts)
+    const firstDay = parseDay(t.month, t.year, header[1].Text)
+    // discard first column and two last which are totals 
+    const daysX = header.slice(1, -2).map(t => t.X)
+    const weekCount = Math.ceil(daysX.length / 7)
+
+    const firstDayDay = firstDay.getDay()
+    const offset = firstDayDay - 1
+    const firstMonday = new Date(firstDay.getTime() - (offset * 24 * 60 * 60 * 1000))
+
+    const out: PlanningEnfants = { firstMonday, enfants: [] }
+    for (const childRow of rows) {
+      const enfant = parseChild(childRow[0].Text)
+
+      const creneaux: CreneauxEnfant = Array.from({ length: weekCount }, () => [null, null, null, null, null])
+      // discard first column and two last which are totals 
+      for (const day of childRow.slice(1, -2)) {
+        // find the closest day
+        let [bestIndex, bestDistance] = [0, 1e100]
+        daysX.forEach((x, index) => {
+          const distance = Math.abs(x - day.X)
+          if (distance < bestDistance) {
+            bestIndex = index
+            bestDistance = distance
+          }
+        })
+
+        const res = parseRange(day.Text)
+        if (isError(res)) return res
+
+        // index --> semaine and weekday
+        const index = bestIndex + offset
+        const semaineI = Math.floor(index / 7)
+        const dayI = index % 7
+        if (dayI >= 5) continue // ignore Samedi & Dimanche
+
+        creneaux[semaineI][dayI] = { horaires: res, isAdaptation: false }
+      }
+
+      out.enfants.push({ enfant, creneaux })
+    }
+    return out
+  }
 }
 
-export type _TextBlock = {
+export type TextBlock = {
   X: number
   Y: number
   Text: string
 }
 
-export function parsePDFEnfants(texts: _TextBlock[]): PlanningEnfants | error {
-  if (!texts[0].Text.includes("PLANNING MENSUEL")) return newError("Document invalide.")
-  const t = parseMonth(texts[0].Text)
-  if (isError(t)) return t
 
-  texts = texts.slice(1)
-  const [header, ...rows] = detectRows(texts)
-  const firstDay = parseDay(t.month, t.year, header[1].Text)
-  // discard first column and two last which are totals 
-  const daysX = header.slice(1, -2).map(t => t.X)
-  const weekCount = Math.ceil(daysX.length / 7)
-
-  const firstDayDay = firstDay.getDay()
-  const offset = firstDayDay - 1
-  const firstMonday = new Date(firstDay.getTime() - (offset * 24 * 60 * 60 * 1000))
-
-  const out: PlanningEnfants = { firstMonday, enfants: [] }
-  for (const childRow of rows) {
-    const enfant = parseChild(childRow[0].Text)
-
-    const creneaux: CreneauxEnfant = Array.from({ length: weekCount }, () => [null, null, null, null, null])
-    // discard first column and two last which are totals 
-    for (const day of childRow.slice(1, -2)) {
-      // find the closest day
-      let [bestIndex, bestDistance] = [0, 1e100]
-      daysX.forEach((x, index) => {
-        const distance = Math.abs(x - day.X)
-        if (distance < bestDistance) {
-          bestIndex = index
-          bestDistance = distance
-        }
-      })
-
-      const res = parseRange(day.Text)
-      if (isError(res)) return res
-
-      // index --> semaine and weekday
-      const index = bestIndex + offset
-      const semaineI = Math.floor(index / 7)
-      const dayI = index % 7
-      if (dayI >= 5) continue // ignore Samedi & Dimanche
-
-      creneaux[semaineI][dayI] = { horaires: res, isAdaptation: false }
-    }
-
-    out.enfants.push({ enfant, creneaux })
-  }
-  return out
-}
 
 // discard two last lines, unused 
-function detectRows(texts: _TextBlock[]) {
+function detectRows(texts: TextBlock[]) {
   const firstX = texts.map(t => t.X).sort((a, b) => a - b)[0]
   const firstColumn = texts.filter(t => t.X <= firstX + 50) // cell in about 100 long
   firstColumn.sort((a, b) => a.Y - b.Y)
   // split the whole list according to Y value 
-  const rows: _TextBlock[][] = []
+  const rows: TextBlock[][] = []
   firstColumn.forEach((cell, index) => {
     if (index == 0) return // skip first line 
     // extract everything above next line : this is the previous row 
