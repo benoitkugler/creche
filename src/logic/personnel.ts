@@ -1,8 +1,6 @@
 import type { CellValue, Row } from "read-excel-file";
 import {
   isError,
-  isHeure,
-  isMinute,
   newError,
   parseRange,
   Range,

@@ -26,7 +26,7 @@
 import { ref, onMounted } from "vue"
 import readXlsxFile from "read-excel-file";
 import { Pros } from "@/logic/personnel"
-import { Enfants } from "@/logic/enfants"
+import { Enfants, type TextBlock } from "@/logic/enfants"
 import { isError } from "@/logic/shared"
 import "@/wasm_exec"
 
@@ -42,6 +42,11 @@ declare class Go {
     exited: boolean;
     mem: DataView;
     run(instance: WebAssembly.Instance): Promise<void>;
+}
+
+declare global {
+    // go function returning TextBlock[] as JSON string
+    interface Window { readPDFFile(slice: Uint8Array): string }
 }
 
 onMounted(initWasm)
@@ -82,12 +87,5 @@ async function initWasm() {
     go.run(result.instance);
     console.log("OK");
 
-}
-
-function onClick() {
-    const uint8 = new Uint8Array(2_000);
-    uint8[1] = 56
-    const out = JSON.parse(window.readPDFFile(uint8))
-    console.log(out);
 }
 </script>
