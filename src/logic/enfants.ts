@@ -21,8 +21,12 @@ export namespace Enfants {
     return Math.max(...input.enfants.map(e => e.creneaux.length));
   }
 
+  export function firstDay(input: PlanningEnfants) {
+    input.enfants.map(e => e.creneaux[0]?.filter((cr, i => cr != null))
+  }
+
   export function parsePDFEnfants(texts: TextBlock[]): PlanningEnfants | error {
-    if (!texts[0].Text.includes("PLANNING MENSUEL")) return newError("Document invalide.")
+    if (!texts.length || !texts[0].Text.includes("PLANNING MENSUEL")) return newError("Document invalide.")
     const t = parseMonth(texts[0].Text)
     if (isError(t)) return t
 
@@ -101,7 +105,7 @@ function detectRows(texts: TextBlock[]) {
   return rows.slice(0, -1)
 }
 
-const months = [
+export const months = [
   "janvier",
   "février",
   "mars",
