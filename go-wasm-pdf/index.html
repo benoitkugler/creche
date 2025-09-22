@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <script src="wasm_exec.js"></script>
   <script>
+    // this is a basic example 
     const go = new Go();
     WebAssembly.instantiateStreaming(
       fetch("main.wasm"),
@@ -12,17 +13,11 @@
       go.run(result.instance);
     });
 
-    function onClick() {
-      const uint8 = new Uint8Array(2_000);
-      uint8[1] = 56
-      const out = JSON.parse(window.readPDFFile(uint8))
-      console.log(out);
-    }
+    // we can now use window.readPDFFile(array: Uint8Array)
   </script>
 </head>
 
 <body>
-  <button onclick="() => onClick()">TEST</button>
 </body>
 
 </html>
