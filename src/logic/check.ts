@@ -1,5 +1,4 @@
-import { id } from "vuetify/locale";
-import { Enfants, type PlanningEnfants } from "./enfants";
+import { Enfants, type PlanningChildren } from "./enfants";
 import { Pros, type HoraireTravail, type PlanningPros } from "./personnel";
 import {
   computeDate,
@@ -11,7 +10,7 @@ import {
   type Horaire,
   type int,
   type Minute,
-  type SemaineOf
+  type SemaineOf,
 } from "./shared";
 
 const marcheursParPro = 8;
@@ -25,7 +24,7 @@ export const CheckKind = {
   MissingProAdaption: 0,
   MissingProForEnfants: 1,
   MissingProAtReunion: 2,
-  NotEnoughSleep: 3
+  NotEnoughSleep: 3,
 } as const;
 export type DiagnosticKind = (typeof CheckKind)[keyof typeof CheckKind];
 
@@ -49,7 +48,7 @@ type Check =
  * La liste renvoyée est vide si et seulement si aucun problème n'est détecté.
  */
 export function check(
-  enfants: PlanningEnfants,
+  enfants: PlanningChildren,
   pros: PlanningPros
 ): Diagnostic[] {
   return [];
@@ -87,7 +86,7 @@ export function zeroPresenceEnfants(): _EnfantsCount {
   return {
     marcheurCount: 0,
     nonMarcheurCount: 0,
-    adaptionCount: 0
+    adaptionCount: 0,
   };
 }
 
@@ -95,7 +94,9 @@ function emptyDayEnfants() {
   return Array.from({ length: gridLength }, () => zeroPresenceEnfants());
 }
 
-export function _normalizeEnfants(input: PlanningEnfants): Grid<_EnfantsCount> {
+export function _normalizeEnfants(
+  input: PlanningChildren
+): Grid<_EnfantsCount> {
   const out = Array.from(
     { length: Enfants.semaineCount(input) },
     () =>
@@ -104,7 +105,7 @@ export function _normalizeEnfants(input: PlanningEnfants): Grid<_EnfantsCount> {
         emptyDayEnfants(),
         emptyDayEnfants(),
         emptyDayEnfants(),
-        emptyDayEnfants()
+        emptyDayEnfants(),
       ] as SemaineOf<_EnfantsCount[]>
   );
 
@@ -144,13 +145,13 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
         emptyDayPros(),
         emptyDayPros(),
         emptyDayPros(),
-        emptyDayPros()
+        emptyDayPros(),
       ] as SemaineOf<int[]>
   );
 
-  input.semaines.forEach(semaine => {
+  input.semaines.forEach((semaine) => {
     const iSemaine = semaine.semaine;
-    semaine.prosHoraires.forEach(pro => {
+    semaine.prosHoraires.forEach((pro) => {
       pro.horaires.forEach((day, iDay) => {
         const currentDay = out[iSemaine][iDay];
         // gestion de la pause : 2 plages
@@ -184,7 +185,7 @@ export function _checkNombreEnfants(
     return {
       kind: CheckKind.MissingProAdaption,
       got: pros,
-      expect: enfants.adaptionCount
+      expect: enfants.adaptionCount,
     };
   }
   pros -= enfants.adaptionCount;
@@ -195,7 +196,7 @@ export function _checkNombreEnfants(
       return {
         kind: CheckKind.MissingProForEnfants,
         got: pros,
-        expect: 2
+        expect: 2,
       };
     }
   }
@@ -220,7 +221,7 @@ export function _checkNombreEnfants(
     return {
       kind: CheckKind.MissingProForEnfants,
       got: pros,
-      expect: prosForNonMarcheurs + otherPros
+      expect: prosForNonMarcheurs + otherPros,
     };
   }
 
@@ -241,39 +242,40 @@ export function _checkProsDepartArrivee(enfants: _EnfantsCount[], pros: int[]) {
 
   // first arrival
   const indexFirstChild = enfants.findIndex(
-    c => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
+    (c) => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
   );
   // if there is no kids, all good !
   if (indexFirstChild == -1) return;
 
   const expectedFirstPro = indexFirstChild - minutesToIndex(15);
-  const indexFirstPro = pros.findIndex(p => p != 0);
+  const indexFirstPro = pros.findIndex((p) => p != 0);
   if (expectedFirstPro != indexFirstPro) {
     out.push({
       time: "first-arrival",
       expected: indexToHoraire(expectedFirstPro),
-      got: indexToHoraire(indexFirstPro)
+      got: indexToHoraire(indexFirstPro),
     });
   }
 
   // second arrival
   const indexFourthChild = enfants.findIndex(
-    c => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount >= 4
+    (c) => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount >= 4
   );
   if (indexFourthChild != -1) {
     const expectedSecondPro = indexFourthChild - minutesToIndex(15);
-    const indexSecondPro = pros.findIndex(p => p >= 2);
+    const indexSecondPro = pros.findIndex((p) => p >= 2);
     if (expectedSecondPro != indexSecondPro) {
       out.push({
         time: "second-arrival",
         expected: indexToHoraire(expectedSecondPro),
-        got: indexToHoraire(indexSecondPro)
+        got: indexToHoraire(indexSecondPro),
       });
     }
   }
 
+  // TODO:
   const indexLastChild = enfants.findLastIndex(
-    c => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
+    (c) => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
   );
 
   return out;
@@ -304,15 +306,14 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
         out.push({
           date: computeDate(
             pros.firstMonday,
-            semaine.semaine,
-            reunionDayIndex,
+            { week: semaine.semaine, day: reunionDayIndex },
             horaire
           ),
           check: {
             kind: CheckKind.MissingProAtReunion,
             expect: prosCount,
-            got: prosPresent
-          }
+            got: prosPresent,
+          },
         });
         break; // only one diagnostic per week
       }
@@ -337,11 +338,10 @@ export function _checkRepos(pros: PlanningPros): Diagnostic[] {
         out.push({
           date: computeDate(
             pros.firstMonday,
-            semaine.semaine,
-            iDay,
+            { week: semaine.semaine, day: iDay },
             pro.horaires[iDay].presence.fin
           ),
-          check: { kind: CheckKind.NotEnoughSleep, ...c }
+          check: { kind: CheckKind.NotEnoughSleep, ...c },
         });
       }
     }
@@ -360,7 +360,7 @@ function _checkReposNight(
   const expectedRepos = 11; // heures
   const lendemain: Horaire = {
     heure: (day.fin.heure + expectedRepos - 24) as Heure,
-    minute: day.fin.minute
+    minute: day.fin.minute,
   };
   if (isBefore(lendemain, following.debut)) {
     // all good!

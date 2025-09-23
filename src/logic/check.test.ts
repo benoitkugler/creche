@@ -9,7 +9,7 @@ import {
   CheckKind,
   horaireToIndex,
   zeroPresenceEnfants,
-  type _EnfantsCount
+  type _EnfantsCount,
 } from "./check";
 import type { Enfant } from "./enfants";
 import {
@@ -19,23 +19,23 @@ import {
   Range,
   type Heure,
   type int,
-  type Minute
+  type Minute,
 } from "./shared";
 import type { PlanningPros, Pro } from "./personnel";
 
 const enfantMarcheur: Enfant = {
   nom: "Benoit",
   dateNaissance: new Date(),
-  isMarcheur: true
+  isMarcheur: true,
 };
 const enfantNonMarcheur: Enfant = {
   nom: "Benoit",
   dateNaissance: new Date(),
-  isMarcheur: false
+  isMarcheur: false,
 };
 
 const pro: Pro = {
-  prenom: "Audrey"
+  prenom: "Audrey",
 };
 
 function h(h: Heure, m: Minute) {
@@ -54,9 +54,9 @@ test("normalize enfants", () => {
             { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: true },
             { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             null,
-            null
-          ]
-        ]
+            null,
+          ],
+        ],
       },
       {
         enfant: enfantMarcheur,
@@ -66,9 +66,9 @@ test("normalize enfants", () => {
             { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             null,
-            null
-          ]
-        ]
+            null,
+          ],
+        ],
       },
       {
         enfant: enfantNonMarcheur,
@@ -78,31 +78,31 @@ test("normalize enfants", () => {
             { horaires: new Range(h(6, 10), h(6, 30)), isAdaptation: false },
             { horaires: new Range(h(6, 10), h(6, 40)), isAdaptation: false },
             null,
-            null
-          ]
-        ]
-      }
-    ]
+            null,
+          ],
+        ],
+      },
+    ],
   });
   expect(grid[0][0].length).toBe(12 * (HeureMax - HeureMin));
-  grid[0][0].forEach(v => expect(v).toEqual(zeroPresenceEnfants()));
+  grid[0][0].forEach((v) => expect(v).toEqual(zeroPresenceEnfants()));
   const day = grid[0][1];
   expect(day[0]).toEqual(zeroPresenceEnfants());
   expect(day[1]).toEqual(zeroPresenceEnfants());
   expect(day[2]).toEqual({
     adaptionCount: 1,
     marcheurCount: 1,
-    nonMarcheurCount: 1
+    nonMarcheurCount: 1,
   });
   expect(grid[0][2][2]).toEqual({
     adaptionCount: 0,
     marcheurCount: 2,
-    nonMarcheurCount: 1
+    nonMarcheurCount: 1,
   });
   expect(grid[0][2][6]).toEqual({
     adaptionCount: 0,
     marcheurCount: 0,
-    nonMarcheurCount: 1
+    nonMarcheurCount: 1,
   });
 });
 
@@ -118,54 +118,54 @@ test("normalize pros", () => {
             horaires: [
               {
                 presence: new Range(h(6, 0), h(12, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(12, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(12, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(12, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(12, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
-              }
-            ]
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+            ],
           },
           {
             pro,
             horaires: [
               {
                 presence: new Range(h(6, 0), h(18, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(18, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(18, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(18, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: new Range(h(6, 0), h(18, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+            ],
+          },
+        ],
+      },
+    ],
   });
 
   expect(grid[0][0].length).toBe(12 * (HeureMax - HeureMin));
@@ -216,15 +216,27 @@ test("check enfants count", () => {
 });
 
 test("date", () => {
-  expect(computeDate(new Date(2025, 8, 1), 0, 0, h(6, 25)).toISOString()).toBe(
-    "2025-09-01T06:25:00.000Z"
-  );
-  expect(computeDate(new Date(2025, 8, 1), 0, 1, h(6, 0)).toISOString()).toBe(
-    "2025-09-02T06:00:00.000Z"
-  );
-  expect(computeDate(new Date(2025, 8, 1), 1, 1, h(6, 0)).toISOString()).toBe(
-    "2025-09-09T06:00:00.000Z"
-  );
+  expect(
+    computeDate(
+      new Date(2025, 8, 1),
+      { week: 0, day: 0 },
+      h(6, 25)
+    ).toISOString()
+  ).toBe("2025-09-01T06:25:00.000Z");
+  expect(
+    computeDate(
+      new Date(2025, 8, 1),
+      { week: 0, day: 1 },
+      h(6, 0)
+    ).toISOString()
+  ).toBe("2025-09-02T06:00:00.000Z");
+  expect(
+    computeDate(
+      new Date(2025, 8, 1),
+      { week: 1, day: 1 },
+      h(6, 0)
+    ).toISOString()
+  ).toBe("2025-09-09T06:00:00.000Z");
 });
 
 test("check reunion1", () => {
@@ -239,52 +251,52 @@ test("check reunion1", () => {
             horaires: [
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
-              }
-            ]
+                pause: Range.empty(),
+              },
+            ],
           },
           {
             pro,
             horaires: [
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
-              }
-            ]
-          }
-        ]
+                pause: Range.empty(),
+              },
+            ],
+          },
+        ],
       },
       {
         semaine: 1,
@@ -294,52 +306,52 @@ test("check reunion1", () => {
             horaires: [
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
-              }
-            ]
+                pause: Range.empty(),
+              },
+            ],
           },
           {
             pro,
             horaires: [
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(14, 0))
+                pause: new Range(h(10, 30), h(14, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
-              }
-            ]
-          }
-        ]
+                pause: Range.empty(),
+              },
+            ],
+          },
+        ],
       },
 
       {
@@ -350,54 +362,54 @@ test("check reunion1", () => {
             horaires: [
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
-              }
-            ]
+                pause: Range.empty(),
+              },
+            ],
           },
           {
             pro,
             horaires: [
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(14, 0))
+                pause: new Range(h(10, 30), h(14, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                pause: Range.empty(),
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   const diag = _checkReunion(planning);
@@ -421,29 +433,29 @@ test("check repos", () => {
             horaires: [
               {
                 presence: new Range(h(6, 0), h(20, 15)),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(7, 0), h(16, 0)),
-                pause: new Range(h(10, 30), h(11, 0))
+                pause: new Range(h(10, 30), h(11, 0)),
               },
               {
                 presence: Range.empty(),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(6, 0), h(20, 0)),
-                pause: Range.empty()
+                pause: Range.empty(),
               },
               {
                 presence: new Range(h(7, 0), h(16, 0)), // just enough !
-                pause: Range.empty()
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                pause: Range.empty(),
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
   const diags = _checkRepos(planning);
   expect(diags).toHaveLength(1);
@@ -459,7 +471,7 @@ test("check pro arrival", () => {
     ec(0, 0, 0),
     ec(0, 0, 0),
     ec(0, 1, 0),
-    ec(0, 1, 0)
+    ec(0, 1, 0),
   ];
   expect(_checkProsArrivals(enfants2, [0, 1, 1, 1, 1, 1])).toHaveLength(0);
   expect(_checkProsArrivals(enfants2, [0, 2, 1, 1, 1, 1])).toHaveLength(0);
@@ -475,7 +487,7 @@ test("check pro arrival", () => {
     ec(0, 1, 0),
     ec(0, 2, 1),
     ec(0, 2, 1),
-    ec(0, 2, 3)
+    ec(0, 2, 3),
   ];
   expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 2, 2, 2, 2])).toHaveLength(
     0
