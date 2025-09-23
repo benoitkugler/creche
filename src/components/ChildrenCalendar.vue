@@ -81,11 +81,16 @@
 import { computed, ref, watch } from "vue";
 import {
   type CreneauEnfant,
-  Enfants,
+  Children,
   type PlanningChildren,
   months,
 } from "@/logic/enfants";
-import { computeDate, formatHoraire, type DayIndex } from "@/logic/shared";
+import {
+  computeDate,
+  copy,
+  formatHoraire,
+  type DayIndex,
+} from "@/logic/shared";
 
 const props = defineProps<{ planning: PlanningChildren }>();
 
@@ -95,20 +100,20 @@ const emit = defineEmits<{
   (e: "goNext"): void;
 }>();
 
-const inner = ref(window.structuredClone(props.planning));
+const inner = ref(copy(props.planning));
 
 watch(
   () => props.planning,
-  () => (inner.value = window.structuredClone(props.planning))
+  () => (inner.value = copy(props.planning))
 );
 
-const firstDay = computed(() => Enfants.firstDay(inner.value));
+const firstDay = computed(() => Children.firstDay(inner.value));
 
 const month = computed(() => months[firstDay.value.getMonth()]!.toUpperCase());
 
 const days = computed(() => {
   const out: DayIndex[] = [];
-  const sCount = Enfants.semaineCount(inner.value);
+  const sCount = Children.semaineCount(inner.value);
   for (let week = 0; week < sCount; week++) {
     for (let day = 0; day < 5; day++) {
       out.push({ week, day });

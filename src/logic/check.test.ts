@@ -1,13 +1,13 @@
 import { expect, test } from "bun:test";
 import {
-  _checkNombreEnfants as _checkEnfantsCount,
-  _checkProsDepartArrivee as _checkProsArrivals,
+  _checkEnfantsCount,
+  _checkProsArrivals,
   _checkRepos,
   _checkReunion,
   _normalizeEnfants,
   _normalizePros,
   CheckKind,
-  horaireToIndex,
+  TimeGrid,
   zeroPresenceEnfants,
   type _EnfantsCount,
 } from "./check";
@@ -36,6 +36,7 @@ const enfantNonMarcheur: Enfant = {
 
 const pro: Pro = {
   prenom: "Audrey",
+  color: "FFFFFFFF",
 };
 
 function h(h: Heure, m: Minute) {
@@ -171,9 +172,9 @@ test("normalize pros", () => {
   expect(grid[0][0].length).toBe(12 * (HeureMax - HeureMin));
   const day = grid[1][0];
   expect(day[0]).toBe(2);
-  expect(day[horaireToIndex(h(10, 30))]).toBe(0);
-  expect(day[horaireToIndex(h(13, 30))]).toBe(1);
-  expect(day[horaireToIndex(h(18, 0))]).toBe(0);
+  expect(day[TimeGrid.horaireToIndex(h(10, 30))]).toBe(0);
+  expect(day[TimeGrid.horaireToIndex(h(13, 30))]).toBe(1);
+  expect(day[TimeGrid.horaireToIndex(h(18, 0))]).toBe(0);
 });
 
 function ec(

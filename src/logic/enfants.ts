@@ -24,7 +24,7 @@ export type PlanningChildren = {
   enfants: { enfant: Enfant; creneaux: CreneauxEnfant }[];
 };
 
-export namespace Enfants {
+export namespace Children {
   /** returns the maximum semaine */
   export function semaineCount(input: PlanningChildren) {
     return Math.max(...input.enfants.map((e) => e.creneaux.length));

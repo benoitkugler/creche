@@ -1,4 +1,4 @@
-import type { CellValue, Row } from "read-excel-file";
+import Excel from "exceljs";
 import {
   isError,
   newError,
@@ -11,6 +11,7 @@ import {
 
 export type Pro = {
   prenom: string;
+  color: string; // "AHEX"
 };
 
 export type HoraireTravail = {
@@ -23,7 +24,7 @@ type SemainePro = {
   horaires: SemaineOf<HoraireTravail>;
 };
 
-type PlanningProsSemaine = {
+export type PlanningProsSemaine = {
   semaine: int; // index (0 based) par rapport au tableau des enfants
   prosHoraires: SemainePro[]; // pour chaque pro
 };
@@ -39,20 +40,29 @@ export namespace Pros {
     return Math.max(...input.semaines.map((e) => e.semaine)) + 1;
   }
 
-  /** You should use `readXlsxFile` to produce rows */
-  export function parseExcelPros(
-    rows: Row[],
+  export async function parseExcelPros(
+    file: Blob,
     firstMonday: Date
-  ): PlanningPros | error {
+  ): Promise<PlanningPros | error> {
+    // read from a stream
+    const workbook = new Excel.Workbook();
+    await workbook.xlsx.load(await file.arrayBuffer());
+    // ... use workbook
+    const sheet = workbook.worksheets[0];
+    const rows = sheet.getRows(0, sheet.rowCount) || [];
+    // .eachRow((row) =>
+    //   row.eachCell((cell) => console.log(cell.value, cell.style.fill))
+    // );
+
     const out: PlanningPros = { firstMonday, semaines: [] };
     let currentWeek: PlanningProsSemaine = { semaine: -1, prosHoraires: [] };
 
     for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
+      const row = collectCells(rows[index]);
       if (!row.length) continue;
 
       // detect a week start
-      const firstCell = row[0];
+      const firstCell = row[0].value;
       if (typeof firstCell != "string") continue;
       if (firstCell.toLowerCase().includes("semaine")) {
         const semaine = parseSemaine(firstCell, firstMonday);
@@ -74,7 +84,7 @@ export namespace Pros {
         index += 1;
         if (index >= rows.length)
           return newError("Ligne de pauses manquantes.");
-        const res = parseHorairesPros(row, rows[index]);
+        const res = parseHorairesPros(row, collectCells(rows[index]));
         if (isError(res)) return newError(`Ligne ${index + 1} : ${res.err}`);
         currentWeek.prosHoraires.push(res);
       }
@@ -114,13 +124,21 @@ function parseSemaine(firstCell: string, firstMonday: Date): int | error {
 }
 
 function parseHorairesPros(
-  rowPresences: Row,
-  rowPauses: Row
+  rowPresences: Excel.Cell[],
+  rowPauses: Excel.Cell[]
 ): SemainePro | error {
   if (rowPresences.length < 15 || rowPauses.length < 15) {
     return newError("Ligne trop courte.");
   }
-  const pro: Pro = { prenom: (rowPresences[0] as string).trim() };
+
+  const firstCell = rowPresences[0];
+  const prenom = (firstCell.value as string).trim();
+  const fill = firstCell.style.fill;
+  let color = "";
+  if (fill?.type == "pattern") {
+    color = fill.fgColor?.argb || "";
+  }
+  const pro: Pro = { prenom, color };
   const d1 = parseHorairesDay(
     rowPresences[1],
     rowPresences[2],
@@ -161,14 +179,14 @@ function parseHorairesPros(
 }
 
 function parseHorairesDay(
-  presenceStart: CellValue,
-  presenceEnd: CellValue,
-  pauseStart: CellValue,
-  pauseEnd: CellValue
+  presenceStart: Excel.Cell,
+  presenceEnd: Excel.Cell,
+  pauseStart: Excel.Cell,
+  pauseEnd: Excel.Cell
 ): HoraireTravail | error {
-  const presenceI = parseRangeOrEmpty(presenceStart, presenceEnd);
+  const presenceI = parseRangeOrEmpty(presenceStart.value, presenceEnd.value);
   if (isError(presenceI)) return presenceI;
-  const pauseI = parseRangeOrEmpty(pauseStart, pauseEnd);
+  const pauseI = parseRangeOrEmpty(pauseStart.value, pauseEnd.value);
   if (isError(pauseI)) return pauseI;
 
   // check inclusion
@@ -179,8 +197,8 @@ function parseHorairesDay(
 }
 
 function parseRangeOrEmpty(
-  cellStart: CellValue,
-  cellEnd: CellValue
+  cellStart: Excel.CellValue,
+  cellEnd: Excel.CellValue
 ): Range | error {
   if (cellStart instanceof Date) {
     cellStart = cellStart.toISOString().slice(11, 16);
@@ -192,4 +210,10 @@ function parseRangeOrEmpty(
     return Range.empty();
   }
   return parseRange(`${cellStart} ${cellEnd}`);
+}
+
+function collectCells(row: Excel.Row) {
+  const out: Excel.Cell[] = [];
+  row.eachCell({ includeEmpty: true }, (v) => out.push(v));
+  return out;
 }

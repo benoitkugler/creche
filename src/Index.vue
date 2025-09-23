@@ -1,18 +1,46 @@
 <template>
   <v-container fluid>
-    <FilesLoader></FilesLoader>
-    <!-- <EnfantsCalendar :planning="tmpPlanning"></EnfantsCalendar> -->
+    <FilesLoader
+      v-if="step == 'load-files'"
+      @go-next="
+        (c, p) => {
+          planningChildren = c;
+          planningPros = p;
+          step = 'view-children';
+          showSuccess = true;
+          save();
+        }
+      "
+    ></FilesLoader>
+    <ChildrenCalendar
+      v-else-if="step == 'view-children'"
+      @go-back="step = 'load-files'"
+      @go-next="step = 'view-pros'"
+      :planning="planningChildren"
+      @update="(p) => (planningChildren = p)"
+    ></ChildrenCalendar>
+    <ProsCalendar
+      v-else-if="step == 'view-pros'"
+      @go-back="step = 'view-children'"
+      :planning="planningPros"
+    ></ProsCalendar>
+
+    <v-snackbar v-model="showSuccess" :timeout="3000" color="green">
+      Fichiers importés avec succès.
+    </v-snackbar>
   </v-container>
 </template>
 
 <script lang="ts" setup>
-import { onMounted } from "vue";
-import { Enfants, type PlanningChildren } from "@/logic/enfants";
+import { onMounted, ref } from "vue";
 import "@/wasm_exec";
-import EnfantsCalendar from "./components/EnfantsCalendar.vue";
 
-import sample_pdf_content from "./logic/sample_enfants_off.json";
 import FilesLoader from "./components/FilesLoader.vue";
+import type { PlanningChildren } from "./logic/enfants";
+import type { PlanningPros } from "./logic/personnel";
+import ChildrenCalendar from "./components/ChildrenCalendar.vue";
+import { fromJson } from "./logic/shared";
+import ProsCalendar from "./components/ProsCalendar.vue";
 
 /**
  * Go is the class as defined in the Golang `wasm_exec.js` distributable file required for WebAssembly.
@@ -35,11 +63,24 @@ declare global {
   }
 }
 
-const tmpPlanning = Enfants.parsePDFEnfants(
-  sample_pdf_content
-) as PlanningChildren;
+onMounted(() => {
+  load();
+  initWasm();
+});
 
-onMounted(initWasm);
+const step = ref<"load-files" | "view-children" | "view-pros">("load-files");
+
+const planningChildren = ref<PlanningChildren>({
+  firstMonday: new Date(),
+  enfants: [],
+});
+
+const planningPros = ref<PlanningPros>({
+  firstMonday: new Date(),
+  semaines: [],
+});
+
+const showSuccess = ref(false);
 
 async function initWasm() {
   const go = new Go();
@@ -48,6 +89,25 @@ async function initWasm() {
     go.importObject
   );
   go.run(result.instance);
-  console.log("OK");
+}
+
+function save() {
+  window.localStorage.setItem(
+    "planningChildren",
+    JSON.stringify(planningChildren.value)
+  );
+  window.localStorage.setItem(
+    "planningPros",
+    JSON.stringify(planningPros.value)
+  );
+}
+
+function load() {
+  const jsonC = window.localStorage.getItem("planningChildren");
+  const jsonP = window.localStorage.getItem("planningPros");
+  if (jsonP == null || jsonC == null) return;
+  planningChildren.value = fromJson(jsonC) as PlanningChildren;
+  planningPros.value = fromJson(jsonP) as PlanningPros;
+  step.value = "view-children";
 }
 </script>

@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
-import { type TextBlock, Enfants } from "./enfants";
+import { type TextBlock, Children } from "./enfants";
 import { isError, Range } from "./shared";
 
 test("parse personnel", async () => {
   const file = Bun.file("src/logic/sample_enfants_off.json");
   const data: TextBlock[] = await file.json();
-  const res = Enfants.parsePDFEnfants(data);
+  const res = Children.parsePDFEnfants(data);
   expect(isError(res)).toBeFalse();
   if (isError(res)) return;
 

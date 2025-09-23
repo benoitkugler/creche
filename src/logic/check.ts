@@ -1,4 +1,4 @@
-import { Enfants, type PlanningChildren } from "./enfants";
+import { Children, type PlanningChildren } from "./enfants";
 import { Pros, type HoraireTravail, type PlanningPros } from "./personnel";
 import {
   computeDate,
@@ -54,19 +54,29 @@ export function check(
   return [];
 }
 
-// to simplify checks we normalize the creneaux to a regular 5-min spaced
-// slice
+/** To simplify checks we normalize the creneaux to a regular 5-min spaced slice */
+export namespace TimeGrid {
+  export const Length = 12 * (HeureMax - HeureMin);
 
-const gridLength = 12 * (HeureMax - HeureMin);
+  export function horaireToIndex(h: Horaire) {
+    return (h.heure - HeureMin) * 12 + minutesToIndex(h.minute);
+  }
 
-export function horaireToIndex(h: Horaire) {
-  return (h.heure - HeureMin) * 12 + minutesToIndex(h.minute);
-}
+  export function indexToHoraire(index: int): Horaire {
+    const heure = Math.floor(index / 12);
+    const minute = index % 12;
+    return {
+      heure: (HeureMin + heure) as Heure,
+      minute: (minute * 5) as Minute,
+    };
+  }
 
-export function indexToHoraire(index: int): Horaire {
-  const heure = Math.floor(index / 12);
-  const minute = index % 12;
-  return { heure: (HeureMin + heure) as Heure, minute: (minute * 5) as Minute };
+  export function isIndexInHoraires(horaires: HoraireTravail, index: int) {
+    const horaire = indexToHoraire(index);
+    return (
+      horaires.presence.contains(horaire) && !horaires.pause.contains(horaire)
+    );
+  }
 }
 
 function minutesToIndex(m: Minute): int {
@@ -91,14 +101,14 @@ export function zeroPresenceEnfants(): _EnfantsCount {
 }
 
 function emptyDayEnfants() {
-  return Array.from({ length: gridLength }, () => zeroPresenceEnfants());
+  return Array.from({ length: TimeGrid.Length }, () => zeroPresenceEnfants());
 }
 
 export function _normalizeEnfants(
   input: PlanningChildren
 ): Grid<_EnfantsCount> {
   const out = Array.from(
-    { length: Enfants.semaineCount(input) },
+    { length: Children.semaineCount(input) },
     () =>
       [
         emptyDayEnfants(),
@@ -114,8 +124,8 @@ export function _normalizeEnfants(
       semaine.forEach((day, iDay) => {
         if (day === null) return;
         const currentDay = out[iSemaine][iDay];
-        const indexDebut = horaireToIndex(day.horaires.debut);
-        const indexFin = horaireToIndex(day.horaires.fin);
+        const indexDebut = TimeGrid.horaireToIndex(day.horaires.debut);
+        const indexFin = TimeGrid.horaireToIndex(day.horaires.fin);
         for (let index = indexDebut; index < indexFin; index++) {
           if (day.isAdaptation) {
             currentDay[index].adaptionCount += 1;
@@ -133,7 +143,7 @@ export function _normalizeEnfants(
 }
 
 function emptyDayPros() {
-  return Array.from({ length: gridLength }, () => 0);
+  return Array.from({ length: TimeGrid.Length }, () => 0);
 }
 
 export function _normalizePros(input: PlanningPros): Grid<int> {
@@ -155,13 +165,13 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
       pro.horaires.forEach((day, iDay) => {
         const currentDay = out[iSemaine][iDay];
         // gestion de la pause : 2 plages
-        const indexDebut1 = horaireToIndex(day.presence.debut);
-        const indexFin1 = horaireToIndex(day.pause.debut);
+        const indexDebut1 = TimeGrid.horaireToIndex(day.presence.debut);
+        const indexFin1 = TimeGrid.horaireToIndex(day.pause.debut);
         for (let index = indexDebut1; index < indexFin1; index++) {
           currentDay[index] += 1;
         }
-        const indexDebut2 = horaireToIndex(day.pause.fin);
-        const indexFin2 = horaireToIndex(day.presence.fin);
+        const indexDebut2 = TimeGrid.horaireToIndex(day.pause.fin);
+        const indexFin2 = TimeGrid.horaireToIndex(day.presence.fin);
         for (let index = indexDebut2; index < indexFin2; index++) {
           currentDay[index] += 1;
         }
@@ -176,7 +186,7 @@ type MissingProAdaption = { got: int; expect: int };
 type MissingProForEnfants = { got: int; expect: int };
 
 // TODO: check and document the rules
-export function _checkNombreEnfants(
+export function _checkEnfantsCount(
   enfants: _EnfantsCount,
   pros: int
 ): Check | undefined {
@@ -237,7 +247,7 @@ type WrongDepartArriveePro = {
 
 // Enf3 : La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.
 // Enf4 : Une et une seule pro reste 15 min après le dernier enfant.
-export function _checkProsDepartArrivee(enfants: _EnfantsCount[], pros: int[]) {
+export function _checkProsArrivals(enfants: _EnfantsCount[], pros: int[]) {
   const out: WrongDepartArriveePro[] = [];
 
   // first arrival
@@ -252,8 +262,8 @@ export function _checkProsDepartArrivee(enfants: _EnfantsCount[], pros: int[]) {
   if (expectedFirstPro != indexFirstPro) {
     out.push({
       time: "first-arrival",
-      expected: indexToHoraire(expectedFirstPro),
-      got: indexToHoraire(indexFirstPro),
+      expected: TimeGrid.indexToHoraire(expectedFirstPro),
+      got: TimeGrid.indexToHoraire(indexFirstPro),
     });
   }
 
@@ -267,8 +277,8 @@ export function _checkProsDepartArrivee(enfants: _EnfantsCount[], pros: int[]) {
     if (expectedSecondPro != indexSecondPro) {
       out.push({
         time: "second-arrival",
-        expected: indexToHoraire(expectedSecondPro),
-        got: indexToHoraire(indexSecondPro),
+        expected: TimeGrid.indexToHoraire(expectedSecondPro),
+        got: TimeGrid.indexToHoraire(indexSecondPro),
       });
     }
   }
@@ -297,12 +307,12 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
     const prosCount = semaine.prosHoraires.length; // total number of pros this week
     const reunionDay = grid[semaine.semaine][reunionDayIndex]; // day of the reunion in this week
     // select the reunion horaire and check
-    const indexStart = horaireToIndex(horaireReunion.debut);
-    const indexEnd = horaireToIndex(horaireReunion.fin);
+    const indexStart = TimeGrid.horaireToIndex(horaireReunion.debut);
+    const indexEnd = TimeGrid.horaireToIndex(horaireReunion.fin);
     for (let index = indexStart; index < indexEnd; index++) {
       const prosPresent = reunionDay[index];
       if (prosPresent < prosCount) {
-        const horaire = indexToHoraire(index);
+        const horaire = TimeGrid.indexToHoraire(index);
         out.push({
           date: computeDate(
             pros.firstMonday,

@@ -29,6 +29,11 @@ export class Range {
     return isBefore(this.fin, this.debut);
   }
 
+  contains(horaire: Horaire) {
+    if (this.isEmpty()) return false;
+    return isBefore(this.debut, horaire) && isBefore(horaire, this.fin);
+  }
+
   /** returns true if other is (fully) included in this range */
   includes(other: Range) {
     if (other.isEmpty()) return true;
@@ -129,4 +134,25 @@ export function computeDate(
       horaire.heure * heureC +
       horaire.minute * minutesC
   );
+}
+
+function reviver<T>(_: string, v: T) {
+  // Range
+  if (typeof v == "object" && v != null && "__proto__" in v) {
+    if ("debut" in v && "fin" in v) {
+      return new Range(v.debut as Horaire, v.fin as Horaire);
+    }
+  }
+  if (typeof v != "string") return v;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  return d;
+}
+
+export function fromJson<T>(v: string) {
+  return JSON.parse(v, reviver) as T;
+}
+
+export function copy<T>(v: T) {
+  return fromJson<T>(JSON.stringify(v));
 }

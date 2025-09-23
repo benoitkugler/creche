@@ -31,10 +31,6 @@
       >
     </v-card-actions>
 
-    <v-snackbar v-model="showSuccess" :timeout="3000" color="green">
-      Fichiers importés avec succès.
-    </v-snackbar>
-
     <v-dialog
       :model-value="error != ''"
       @update:model-value="error = ''"
@@ -50,12 +46,11 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import {
-  Enfants,
+  Children,
   type PlanningChildren,
   type TextBlock,
 } from "@/logic/enfants";
 import { isError } from "@/logic/shared";
-import readXlsxFile from "read-excel-file";
 import { Pros, type PlanningPros } from "@/logic/personnel";
 
 const props = defineProps<{}>();
@@ -68,7 +63,6 @@ const fileChildren = ref<File | null>(null);
 const filePros = ref<File | null>(null);
 
 const error = ref("");
-const showSuccess = ref(false);
 
 async function importFiles() {
   if (!fileChildren.value || !filePros.value) return;
@@ -76,22 +70,18 @@ async function importFiles() {
   const content = await fileChildren.value.arrayBuffer();
   const slice = new Uint8Array(content);
   const textsContents: TextBlock[] = JSON.parse(window.readPDFFile(slice));
-  const res1 = Enfants.parsePDFEnfants(textsContents);
+  const res1 = Children.parsePDFEnfants(textsContents);
   if (isError(res1)) {
     error.value = res1.err;
     return;
   }
 
   // Pros
-  const rows = await readXlsxFile(filePros.value);
-  console.log(res1.firstMonday);
-
-  const res2 = Pros.parseExcelPros(rows, res1.firstMonday);
+  const res2 = await Pros.parseExcelPros(filePros.value, res1.firstMonday);
   if (isError(res2)) {
     error.value = res2.err;
     return;
   }
-  showSuccess.value = true;
   emit("goNext", res1, res2);
 }
 </script>
