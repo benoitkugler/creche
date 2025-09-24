@@ -3,7 +3,7 @@ import { type TextBlock, Children } from "./enfants";
 import { isError, Range } from "./shared";
 
 test("parse personnel", async () => {
-  const file = Bun.file("src/logic/sample_enfants_off.json");
+  const file = Bun.file("src/logic/sample_enfants_redacted.json");
   const data: TextBlock[] = await file.json();
   const res = Children.parsePDFEnfants(data);
   expect(isError(res)).toBeFalse();

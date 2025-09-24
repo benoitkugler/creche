@@ -1,11 +1,16 @@
 import { Children, type PlanningChildren } from "./enfants";
-import { Pros, type HoraireTravail, type PlanningPros } from "./personnel";
 import {
-  computeDate,
+  Pros,
+  type HoraireTravail,
+  type PlanningPros,
+  type Pro,
+} from "./personnel";
+import {
   HeureMax,
   HeureMin,
   isBefore,
   Range,
+  type DayIndex,
   type Heure,
   type Horaire,
   type int,
@@ -13,12 +18,13 @@ import {
   type SemaineOf,
 } from "./shared";
 
-const marcheursParPro = 8;
-const nonMarcheursParPro = 3;
-
 // TODO: que faire d'un groupe mixte avec une seule pro ?
 
-type Diagnostic = { date: Date; check: Check };
+export type Diagnostic = {
+  dayIndex: DayIndex;
+  horaireIndex: int;
+  check: Check;
+};
 
 export const CheckKind = {
   MissingProAdaption: 0,
@@ -26,9 +32,9 @@ export const CheckKind = {
   MissingProAtReunion: 2,
   NotEnoughSleep: 3,
 } as const;
-export type DiagnosticKind = (typeof CheckKind)[keyof typeof CheckKind];
+export type CheckKind = (typeof CheckKind)[keyof typeof CheckKind];
 
-type Check =
+export type Check =
   | ({
       kind: (typeof CheckKind)["MissingProAdaption"];
     } & MissingProAdaption)
@@ -42,7 +48,12 @@ type Check =
       kind: (typeof CheckKind)["NotEnoughSleep"];
     } & NotEnoughSleep);
 
-/** `check` analyze les données fournies et s'assure qu'il y a
+/** This user-friendly list documents the various checks implemented in this file. */
+export const CheckDescription = [
+  // TODO
+] as const;
+
+/** `check` analyze les données fournies et s'assure notamment qu'il y a
  * suffisament de pros à tout moment de la journée.
  *
  * La liste renvoyée est vide si et seulement si aucun problème n'est détecté.
@@ -56,13 +67,16 @@ export function check(
 
 /** To simplify checks we normalize the creneaux to a regular 5-min spaced slice */
 export namespace TimeGrid {
+  /** 0-based index into the grid timeline  */
+  export type Index = int;
+
   export const Length = 12 * (HeureMax - HeureMin);
 
   export function horaireToIndex(h: Horaire) {
     return (h.heure - HeureMin) * 12 + minutesToIndex(h.minute);
   }
 
-  export function indexToHoraire(index: int): Horaire {
+  export function indexToHoraire(index: Index): Horaire {
     const heure = Math.floor(index / 12);
     const minute = index % 12;
     return {
@@ -71,7 +85,7 @@ export namespace TimeGrid {
     };
   }
 
-  export function isIndexInHoraires(horaires: HoraireTravail, index: int) {
+  export function isIndexInHoraires(horaires: HoraireTravail, index: Index) {
     const horaire = indexToHoraire(index);
     return (
       horaires.presence.contains(horaire) && !horaires.pause.contains(horaire)
@@ -160,7 +174,7 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
   );
 
   input.semaines.forEach((semaine) => {
-    const iSemaine = semaine.semaine;
+    const iSemaine = semaine.week;
     semaine.prosHoraires.forEach((pro) => {
       pro.horaires.forEach((day, iDay) => {
         const currentDay = out[iSemaine][iDay];
@@ -190,6 +204,9 @@ export function _checkEnfantsCount(
   enfants: _EnfantsCount,
   pros: int
 ): Check | undefined {
+  const marcheursParPro = 8;
+  const nonMarcheursParPro = 3;
+
   // adaption requires a full pro
   if (enfants.adaptionCount > pros) {
     return {
@@ -305,7 +322,7 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
   const grid = _normalizePros(pros);
   for (const semaine of pros.semaines) {
     const prosCount = semaine.prosHoraires.length; // total number of pros this week
-    const reunionDay = grid[semaine.semaine][reunionDayIndex]; // day of the reunion in this week
+    const reunionDay = grid[semaine.week][reunionDayIndex]; // day of the reunion in this week
     // select the reunion horaire and check
     const indexStart = TimeGrid.horaireToIndex(horaireReunion.debut);
     const indexEnd = TimeGrid.horaireToIndex(horaireReunion.fin);
@@ -314,11 +331,8 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
       if (prosPresent < prosCount) {
         const horaire = TimeGrid.indexToHoraire(index);
         out.push({
-          date: computeDate(
-            pros.firstMonday,
-            { week: semaine.semaine, day: reunionDayIndex },
-            horaire
-          ),
+          dayIndex: { week: semaine.week, day: reunionDayIndex },
+          horaireIndex: index,
           check: {
             kind: CheckKind.MissingProAtReunion,
             expect: prosCount,
@@ -333,7 +347,11 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
   return out;
 }
 
-type NotEnoughSleep = { expectedLendemain: Horaire; gotLendemain: Horaire };
+type NotEnoughSleep = {
+  pro: Pro;
+  expectedLendemain: Horaire;
+  gotLendemain: Horaire;
+};
 
 export function _checkRepos(pros: PlanningPros): Diagnostic[] {
   const out: Diagnostic[] = [];
@@ -341,14 +359,14 @@ export function _checkRepos(pros: PlanningPros): Diagnostic[] {
     for (const pro of semaine.prosHoraires) {
       for (let iDay = 0; iDay < 4; iDay++) {
         const c = _checkReposNight(
+          pro.pro,
           pro.horaires[iDay].presence,
           pro.horaires[iDay + 1].presence
         );
         if (c === undefined) continue;
         out.push({
-          date: computeDate(
-            pros.firstMonday,
-            { week: semaine.semaine, day: iDay },
+          dayIndex: { week: semaine.week, day: iDay },
+          horaireIndex: TimeGrid.horaireToIndex(
             pro.horaires[iDay].presence.fin
           ),
           check: { kind: CheckKind.NotEnoughSleep, ...c },
@@ -360,6 +378,7 @@ export function _checkRepos(pros: PlanningPros): Diagnostic[] {
 }
 
 function _checkReposNight(
+  pro: Pro,
   day: Range,
   following: Range
 ): NotEnoughSleep | undefined {
@@ -376,5 +395,5 @@ function _checkReposNight(
     // all good!
     return;
   }
-  return { expectedLendemain: lendemain, gotLendemain: following.debut };
+  return { pro, expectedLendemain: lendemain, gotLendemain: following.debut };
 }

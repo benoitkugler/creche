@@ -3,23 +3,30 @@
     <template #append>
       <v-tabs v-model="displayedWeek">
         <v-tab
-          v-for="week in props.planning.semaines"
-          :value="week.semaine"
+          v-for="week in props.planningPros.semaines"
+          :value="week.week"
           class="text-none"
         >
-          {{ formatSemaine(week.semaine) }}
+          {{ formatSemaine(week.week) }}
+          <v-badge
+            v-if="diagnosticFor(week.week).length"
+            color="warning"
+            :content="diagnosticFor(week.week).length"
+            inline
+          ></v-badge>
         </v-tab>
       </v-tabs>
     </template>
     <v-card-text>
-      <v-tabs-window v-model="displayedWeek">
+      <v-tabs-window v-model="displayedWeek" class="mt-2">
         <v-tabs-window-item
-          v-for="week in props.planning.semaines"
-          :value="week.semaine"
+          v-for="planningWeek in props.planningPros.semaines"
+          :value="planningWeek.week"
         >
           <ProsSemaineView
-            :first-monday="props.planning.firstMonday"
-            :planning="week"
+            :first-monday="props.planningPros.firstMonday"
+            :planning="planningWeek"
+            :diagnostics="diagnosticFor(planningWeek.week)"
           ></ProsSemaineView>
         </v-tabs-window-item>
       </v-tabs-window>
@@ -38,10 +45,15 @@
 <script lang="ts" setup>
 import { type PlanningPros } from "@/logic/personnel";
 import { computeDate, type int } from "@/logic/shared";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";
+import { check, TimeGrid, type Diagnostic } from "@/logic/check";
+import type { PlanningChildren } from "@/logic/enfants";
 
-const props = defineProps<{ planning: PlanningPros }>();
+const props = defineProps<{
+  planningChildren: PlanningChildren;
+  planningPros: PlanningPros;
+}>();
 
 const emit = defineEmits<{
   (e: "goBack"): void;
@@ -50,11 +62,11 @@ const emit = defineEmits<{
 const displayedWeek = ref(0);
 
 function formatSemaine(index: int) {
-  const monday = computeDate(props.planning.firstMonday, {
+  const monday = computeDate(props.planningPros.firstMonday, {
     week: index,
     day: 0,
   });
-  const friday = computeDate(props.planning.firstMonday, {
+  const friday = computeDate(props.planningPros.firstMonday, {
     week: index,
     day: 4,
   });
@@ -66,13 +78,55 @@ function formatSemaine(index: int) {
     month: "2-digit",
   })}`;
 }
+
+const diagnostics = computed(
+  () =>
+    //   check(props.planningChildren, props.planningPros)
+    [
+      {
+        dayIndex: { week: 0, day: 1 },
+        horaireIndex: TimeGrid.horaireToIndex({ heure: 13, minute: 40 }),
+        check: {
+          kind: 0,
+          expect: 3,
+          got: 1,
+        },
+      },
+
+      {
+        dayIndex: { week: 0, day: 1 },
+        horaireIndex: TimeGrid.horaireToIndex({ heure: 13, minute: 40 }),
+        check: {
+          kind: 1,
+          expect: 3,
+          got: 1,
+        },
+      },
+      {
+        dayIndex: { week: 0, day: 1 },
+        horaireIndex: TimeGrid.horaireToIndex({ heure: 13, minute: 40 }),
+        check: {
+          kind: 2,
+          expect: 3,
+          got: 1,
+        },
+      },
+      {
+        dayIndex: { week: 0, day: 1 },
+        horaireIndex: TimeGrid.horaireToIndex({ heure: 13, minute: 40 }),
+        check: {
+          kind: 3,
+          pro: { color: "", prenom: "SDLkslm L." },
+          expectedLendemain: { heure: 12, minute: 15 },
+          gotLendemain: { heure: 12, minute: 30 },
+        },
+      },
+    ] satisfies Diagnostic[]
+);
+
+function diagnosticFor(week: int) {
+  return diagnostics.value.filter((d) => d.dayIndex.week == week);
+}
 </script>
 
-<style>
-.my-table td,
-th {
-  border: 1px solid black;
-  padding: 2px;
-  font-size: 10pt;
-}
-</style>
+<style></style>

@@ -22,7 +22,8 @@
     <ProsCalendar
       v-else-if="step == 'view-pros'"
       @go-back="step = 'view-children'"
-      :planning="planningPros"
+      :planning-children="planningChildren"
+      :planning-pros="planningPros"
     ></ProsCalendar>
 
     <v-snackbar v-model="showSuccess" :timeout="3000" color="green">

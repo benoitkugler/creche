@@ -12,8 +12,8 @@ test("parse personnel", async () => {
   expect(planning.semaines).toHaveLength(4);
   const s1 = planning.semaines[0];
   const s2 = planning.semaines[1];
-  expect(s1.semaine).toBe(0);
-  expect(s2.semaine).toBe(1);
+  expect(s1.week).toBe(0);
+  expect(s2.week).toBe(1);
   expect(s1.prosHoraires).toHaveLength(5);
   const pro1 = s1.prosHoraires[0];
   expect(pro1.pro.prenom).toBe("Ilona R.");

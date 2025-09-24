@@ -112,7 +112,7 @@ test("normalize pros", () => {
     firstMonday: new Date(),
     semaines: [
       {
-        semaine: 1,
+        week: 1,
         prosHoraires: [
           {
             pro,
@@ -245,7 +245,7 @@ test("check reunion1", () => {
     firstMonday: new Date(2025, 8, 1),
     semaines: [
       {
-        semaine: 0,
+        week: 0,
         prosHoraires: [
           {
             pro,
@@ -300,7 +300,7 @@ test("check reunion1", () => {
         ],
       },
       {
-        semaine: 1,
+        week: 1,
         prosHoraires: [
           {
             pro,
@@ -356,7 +356,7 @@ test("check reunion1", () => {
       },
 
       {
-        semaine: 2,
+        week: 2,
         prosHoraires: [
           {
             pro,
@@ -419,7 +419,8 @@ test("check reunion1", () => {
   if (diag[0].check.kind != CheckKind.MissingProAtReunion) return;
   expect(diag[0].check.expect).toBe(2);
   expect(diag[0].check.got).toBe(1);
-  expect(diag[0].date.toISOString()).toBe("2025-09-09T13:30:00.000Z");
+  expect(diag[0].dayIndex).toEqual({ week: 1, day: 1 });
+  expect(diag[0].horaireIndex).toBe(TimeGrid.horaireToIndex(h(13, 30)));
 });
 
 test("check repos", () => {
@@ -427,7 +428,7 @@ test("check repos", () => {
     firstMonday: new Date(2025, 8, 1),
     semaines: [
       {
-        semaine: 1,
+        week: 1,
         prosHoraires: [
           {
             pro,

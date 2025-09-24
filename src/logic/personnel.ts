@@ -25,7 +25,7 @@ type SemainePro = {
 };
 
 export type PlanningProsSemaine = {
-  semaine: int; // index (0 based) par rapport au tableau des enfants
+  week: int; // index (0 based) par rapport au tableau des enfants
   prosHoraires: SemainePro[]; // pour chaque pro
 };
 
@@ -37,7 +37,7 @@ export type PlanningPros = {
 export namespace Pros {
   /** returns the maximum semaine + 1 */
   export function semaineCount(input: PlanningPros) {
-    return Math.max(...input.semaines.map((e) => e.semaine)) + 1;
+    return Math.max(...input.semaines.map((e) => e.week)) + 1;
   }
 
   export async function parseExcelPros(
@@ -55,7 +55,7 @@ export namespace Pros {
     // );
 
     const out: PlanningPros = { firstMonday, semaines: [] };
-    let currentWeek: PlanningProsSemaine = { semaine: -1, prosHoraires: [] };
+    let currentWeek: PlanningProsSemaine = { week: -1, prosHoraires: [] };
 
     for (let index = 0; index < rows.length; index++) {
       const row = collectCells(rows[index]);
@@ -74,11 +74,11 @@ export namespace Pros {
         }
 
         // flush the current week if any
-        if (currentWeek.semaine != -1) {
+        if (currentWeek.week != -1) {
           out.semaines.push(currentWeek);
         }
-        currentWeek = { semaine, prosHoraires: [] }; // start a new week
-      } else if (firstCell.trim().length != 0 && currentWeek.semaine != -1) {
+        currentWeek = { week: semaine, prosHoraires: [] }; // start a new week
+      } else if (firstCell.trim().length != 0 && currentWeek.week != -1) {
         // this is a pro !
         // fetch the next line
         index += 1;
