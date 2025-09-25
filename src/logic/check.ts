@@ -50,7 +50,14 @@ export type Check =
 
 /** This user-friendly list documents the various checks implemented in this file. */
 export const CheckDescription = [
-  // TODO
+  [
+    "Arrivée",
+    "La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.",
+  ],
+  [
+    "Départ",
+    "L’avant-dernière pro doit partir 15 min après le 4° enfant restant, la dernière pro 30 min après le dernier enfant. ",
+  ],
 ] as const;
 
 /** `check` analyze les données fournies et s'assure notamment qu'il y a
@@ -100,27 +107,29 @@ function minutesToIndex(m: Minute): int {
 // semaine -> jour -> découpage by 5min
 type Grid<T> = SemaineOf<T[]>[];
 
-export type _EnfantsCount = {
-  marcheurCount: int;
-  nonMarcheurCount: int;
-  adaptionCount: int;
-};
+export class ChildrenCount {
+  constructor(
+    public marcheurCount: int,
+    public nonMarcheurCount: int,
+    public adaptionCount: int
+  ) {}
 
-export function zeroPresenceEnfants(): _EnfantsCount {
-  return {
-    marcheurCount: 0,
-    nonMarcheurCount: 0,
-    adaptionCount: 0,
-  };
+  static zero() {
+    return new ChildrenCount(0, 0, 0);
+  }
+
+  count() {
+    return this.marcheurCount + this.nonMarcheurCount + this.adaptionCount;
+  }
 }
 
 function emptyDayEnfants() {
-  return Array.from({ length: TimeGrid.Length }, () => zeroPresenceEnfants());
+  return Array.from({ length: TimeGrid.Length }, () => ChildrenCount.zero());
 }
 
 export function _normalizeEnfants(
   input: PlanningChildren
-): Grid<_EnfantsCount> {
+): Grid<ChildrenCount> {
   const out = Array.from(
     { length: Children.semaineCount(input) },
     () =>
@@ -130,7 +139,7 @@ export function _normalizeEnfants(
         emptyDayEnfants(),
         emptyDayEnfants(),
         emptyDayEnfants(),
-      ] as SemaineOf<_EnfantsCount[]>
+      ] as SemaineOf<ChildrenCount[]>
   );
 
   for (const enfant of input.enfants) {
@@ -201,7 +210,7 @@ type MissingProForEnfants = { got: int; expect: int };
 
 // TODO: check and document the rules
 export function _checkEnfantsCount(
-  enfants: _EnfantsCount,
+  enfants: ChildrenCount,
   pros: int
 ): Check | undefined {
   const marcheursParPro = 8;
@@ -257,20 +266,18 @@ export function _checkEnfantsCount(
 }
 
 type WrongDepartArriveePro = {
-  time: "first-arrival" | "second-arrival" | "last-go";
+  moment: "first-arrival" | "second-arrival" | "before-last-go" | "last-go";
   expected: Horaire;
   got: Horaire;
 };
 
-// Enf3 : La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.
-// Enf4 : Une et une seule pro reste 15 min après le dernier enfant.
-export function _checkProsArrivals(enfants: _EnfantsCount[], pros: int[]) {
+// Arrivee: La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.
+// Depart: L’avant-dernière pro doit partir 15 min après le 4° enfant restant, la dernière pro 30 min après le dernier enfant.
+export function _checkProsArrivals(enfants: ChildrenCount[], pros: int[]) {
   const out: WrongDepartArriveePro[] = [];
 
   // first arrival
-  const indexFirstChild = enfants.findIndex(
-    (c) => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
-  );
+  const indexFirstChild = enfants.findIndex((c) => c.count() > 0);
   // if there is no kids, all good !
   if (indexFirstChild == -1) return;
 
@@ -278,32 +285,52 @@ export function _checkProsArrivals(enfants: _EnfantsCount[], pros: int[]) {
   const indexFirstPro = pros.findIndex((p) => p != 0);
   if (expectedFirstPro != indexFirstPro) {
     out.push({
-      time: "first-arrival",
+      moment: "first-arrival",
       expected: TimeGrid.indexToHoraire(expectedFirstPro),
       got: TimeGrid.indexToHoraire(indexFirstPro),
     });
   }
 
-  // second arrival
-  const indexFourthChild = enfants.findIndex(
-    (c) => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount >= 4
-  );
-  if (indexFourthChild != -1) {
-    const expectedSecondPro = indexFourthChild - minutesToIndex(15);
-    const indexSecondPro = pros.findIndex((p) => p >= 2);
-    if (expectedSecondPro != indexSecondPro) {
-      out.push({
-        time: "second-arrival",
-        expected: TimeGrid.indexToHoraire(expectedSecondPro),
-        got: TimeGrid.indexToHoraire(indexSecondPro),
-      });
-    }
+  // last go
+  const indexLastChild = enfants.findLastIndex((c) => c.count() > 0);
+  const expectedLastPro = indexLastChild + minutesToIndex(30);
+  const indexLastPro = pros.findLastIndex((p) => p != 0);
+  if (expectedLastPro != indexLastPro) {
+    out.push({
+      moment: "last-go",
+      expected: TimeGrid.indexToHoraire(expectedLastPro),
+      got: TimeGrid.indexToHoraire(indexLastPro),
+    });
   }
 
-  // TODO:
-  const indexLastChild = enfants.findLastIndex(
-    (c) => c.adaptionCount + c.marcheurCount + c.nonMarcheurCount > 0
-  );
+  // second arrival
+  const indexFourthChild = enfants.findIndex((c) => c.count() >= 4);
+  if (indexFourthChild == -1) {
+    // never more than 3; nothing to check
+    return out;
+  }
+
+  const expectedSecondPro = indexFourthChild - minutesToIndex(15);
+  const indexSecondPro = pros.findIndex((p) => p >= 2);
+  if (expectedSecondPro != indexSecondPro) {
+    out.push({
+      moment: "second-arrival",
+      expected: TimeGrid.indexToHoraire(expectedSecondPro),
+      got: TimeGrid.indexToHoraire(indexSecondPro),
+    });
+  }
+
+  // before last go
+  const indexLastFourthChild = enfants.findLastIndex((c) => c.count() >= 4);
+  const expectedBeforeLastPro = indexLastFourthChild + minutesToIndex(15);
+  const indexBeforeLastPro = pros.findLastIndex((p) => p >= 2);
+  if (expectedBeforeLastPro != indexBeforeLastPro) {
+    out.push({
+      moment: "before-last-go",
+      expected: TimeGrid.indexToHoraire(expectedBeforeLastPro),
+      got: TimeGrid.indexToHoraire(indexBeforeLastPro),
+    });
+  }
 
   return out;
 }

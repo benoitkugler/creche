@@ -7,9 +7,8 @@ import {
   _normalizeEnfants,
   _normalizePros,
   CheckKind,
+  ChildrenCount,
   TimeGrid,
-  zeroPresenceEnfants,
-  type _EnfantsCount,
 } from "./check";
 import type { Enfant } from "./enfants";
 import {
@@ -86,25 +85,13 @@ test("normalize enfants", () => {
     ],
   });
   expect(grid[0][0].length).toBe(12 * (HeureMax - HeureMin));
-  grid[0][0].forEach((v) => expect(v).toEqual(zeroPresenceEnfants()));
+  grid[0][0].forEach((v) => expect(v).toEqual(ChildrenCount.zero()));
   const day = grid[0][1];
-  expect(day[0]).toEqual(zeroPresenceEnfants());
-  expect(day[1]).toEqual(zeroPresenceEnfants());
-  expect(day[2]).toEqual({
-    adaptionCount: 1,
-    marcheurCount: 1,
-    nonMarcheurCount: 1,
-  });
-  expect(grid[0][2][2]).toEqual({
-    adaptionCount: 0,
-    marcheurCount: 2,
-    nonMarcheurCount: 1,
-  });
-  expect(grid[0][2][6]).toEqual({
-    adaptionCount: 0,
-    marcheurCount: 0,
-    nonMarcheurCount: 1,
-  });
+  expect(day[0]).toEqual(ChildrenCount.zero());
+  expect(day[1]).toEqual(ChildrenCount.zero());
+  expect(day[2]).toEqual(new ChildrenCount(1, 1, 1));
+  expect(grid[0][2][2]).toEqual(new ChildrenCount(2, 1, 0));
+  expect(grid[0][2][6]).toEqual(new ChildrenCount(0, 1, 0));
 });
 
 test("normalize pros", () => {
@@ -177,12 +164,8 @@ test("normalize pros", () => {
   expect(day[TimeGrid.horaireToIndex(h(18, 0))]).toBe(0);
 });
 
-function ec(
-  adaptionCount: int,
-  marcheurCount: int,
-  nonMarcheurCount: int
-): _EnfantsCount {
-  return { adaptionCount, marcheurCount, nonMarcheurCount };
+function ec(adaptionCount: int, marcheurCount: int, nonMarcheurCount: int) {
+  return new ChildrenCount(marcheurCount, nonMarcheurCount, adaptionCount);
 }
 
 test("check enfants count", () => {
@@ -466,7 +449,7 @@ test("check repos", () => {
   expect(diags[0].check.expectedLendemain).toEqual(h(7, 15));
 });
 
-test("check pro arrival", () => {
+test("check pro arrivals", () => {
   const enfants2 = [
     ec(0, 0, 0),
     ec(0, 0, 0),
@@ -474,11 +457,30 @@ test("check pro arrival", () => {
     ec(0, 0, 0),
     ec(0, 1, 0),
     ec(0, 1, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
   ];
-  expect(_checkProsArrivals(enfants2, [0, 1, 1, 1, 1, 1])).toHaveLength(0);
-  expect(_checkProsArrivals(enfants2, [0, 2, 1, 1, 1, 1])).toHaveLength(0);
-  expect(_checkProsArrivals(enfants2, [1, 2, 1, 1, 1, 1])).toHaveLength(1);
-  expect(_checkProsArrivals(enfants2, [0, 0, 1, 1, 1, 1])).toHaveLength(1);
+  expect(
+    _checkProsArrivals(enfants2, [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0])
+  ).toHaveLength(0);
+  expect(
+    _checkProsArrivals(enfants2, [0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0])
+  ).toHaveLength(0);
+  expect(
+    _checkProsArrivals(enfants2, [1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0])
+  ).toHaveLength(1);
+  expect(
+    _checkProsArrivals(enfants2, [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0])
+  ).toHaveLength(1);
+  expect(
+    _checkProsArrivals(enfants2, [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0])
+  ).toHaveLength(2);
 
   // with more than 5
   const enfants5 = [
@@ -490,14 +492,55 @@ test("check pro arrival", () => {
     ec(0, 2, 1),
     ec(0, 2, 1),
     ec(0, 2, 3),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
+    ec(0, 0, 0),
   ];
-  expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 2, 2, 2, 2])).toHaveLength(
-    0
-  );
-  expect(_checkProsArrivals(enfants5, [0, 1, 1, 1, 1, 2, 2, 2])).toHaveLength(
-    1
-  );
-  expect(_checkProsArrivals(enfants5, [0, 0, 1, 1, 1, 2, 2, 2])).toHaveLength(
-    2
-  );
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0]
+    )
+  ).toHaveLength(0);
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0]
+    )
+  ).toHaveLength(1);
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0]
+    )
+  ).toHaveLength(2);
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0]
+    )
+  ).toHaveLength(3);
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0]
+    )
+  ).toHaveLength(3);
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0]
+    )
+  ).toHaveLength(4);
+  expect(
+    _checkProsArrivals(
+      enfants5,
+      [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0]
+    )
+  ).toHaveLength(4);
 });
