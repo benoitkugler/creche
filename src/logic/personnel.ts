@@ -11,7 +11,7 @@ import {
 
 export type Pro = {
   prenom: string;
-  color: string; // "AHEX"
+  color: string; // "#HEX"
 };
 
 export type HoraireTravail = {
@@ -134,10 +134,11 @@ function parseHorairesPros(
   const firstCell = rowPresences[0];
   const prenom = (firstCell.value as string).trim();
   const fill = firstCell.style.fill;
-  let color = "";
+  let color = "FFFFFFFF";
   if (fill?.type == "pattern") {
-    color = fill.fgColor?.argb || "";
+    color = fill.fgColor?.argb || "FFFFFFFF";
   }
+  color = "#" + color.slice(2);
   const pro: Pro = { prenom, color };
   const d1 = parseHorairesDay(
     rowPresences[1],

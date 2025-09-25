@@ -7,7 +7,7 @@
           planningChildren = c;
           planningPros = p;
           step = 'view-children';
-          showSuccess = true;
+          successMessage = 'Fichiers importés avec succès.';
           save();
         }
       "
@@ -21,13 +21,18 @@
     ></ChildrenCalendar>
     <ProsCalendar
       v-else-if="step == 'view-pros'"
-      @go-back="step = 'view-children'"
       :planning-children="planningChildren"
       :planning-pros="planningPros"
+      @edit-horaires="editHorairesPros"
+      @go-back="step = 'view-children'"
     ></ProsCalendar>
 
-    <v-snackbar v-model="showSuccess" :timeout="3000" color="green">
-      Fichiers importés avec succès.
+    <v-snackbar
+      :model-value="successMessage != null"
+      :timeout="3000"
+      color="green"
+    >
+      {{ successMessage }}
     </v-snackbar>
   </v-container>
 </template>
@@ -38,9 +43,9 @@ import "@/wasm_exec";
 
 import FilesLoader from "./components/FilesLoader.vue";
 import type { PlanningChildren } from "./logic/enfants";
-import type { PlanningPros } from "./logic/personnel";
+import type { HoraireTravail, PlanningPros } from "./logic/personnel";
 import ChildrenCalendar from "./components/ChildrenCalendar.vue";
-import { fromJson } from "./logic/shared";
+import { fromJson, type DayIndex } from "./logic/shared";
 import ProsCalendar from "./components/ProsCalendar.vue";
 
 /**
@@ -81,7 +86,7 @@ const planningPros = ref<PlanningPros>({
   semaines: [],
 });
 
-const showSuccess = ref(false);
+const successMessage = ref<string | null>(null);
 
 async function initWasm() {
   const go = new Go();
@@ -110,5 +115,13 @@ function load() {
   planningChildren.value = fromJson(jsonC) as PlanningChildren;
   planningPros.value = fromJson(jsonP) as PlanningPros;
   step.value = "view-children";
+}
+
+function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
+  const l = planningPros.value.semaines[day.week].prosHoraires;
+  if (l.length != horaires.length) return; // should not happen
+  horaires.forEach((v, i) => (l[i].horaires[day.day] = v));
+  successMessage.value = "Horaires modifiés avec succès.";
+  save();
 }
 </script>

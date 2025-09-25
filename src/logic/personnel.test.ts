@@ -32,5 +32,5 @@ test("parse personnel", async () => {
   expect(s2.prosHoraires).toHaveLength(4); // empty Pro name : ignored
   const pro5 = s1.prosHoraires[4];
   expect(pro5.pro.prenom).toBe("Léanne C.");
-  expect(pro5.pro.color).toBe("FFCC99FF");
+  expect(pro5.pro.color).toBe("#CC99FF");
 });

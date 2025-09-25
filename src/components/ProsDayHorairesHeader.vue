@@ -2,7 +2,7 @@
   <table class="pros-calendar-day-header">
     <tbody>
       <tr>
-        <td style="height: 24px"></td>
+        <td style="height: 32px"></td>
       </tr>
       <tr v-for="(_, timeIndex) in TimeGrid.Length">
         <td

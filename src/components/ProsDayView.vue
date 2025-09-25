@@ -2,14 +2,19 @@
   <table class="pros-calendar-day">
     <tbody>
       <tr>
-        <td colspan="5" class="text-center" style="height: 24px">
-          {{
-            props.day.toLocaleDateString("fr", {
-              weekday: "short",
-              day: "2-digit",
-              month: "short",
-            })
-          }}
+        <td colspan="5" class="text-center" style="height: 32px">
+          <v-btn size="small" flat @click="emit('edit')">
+            <template #append>
+              <v-icon>mdi-pencil</v-icon>
+            </template>
+            {{
+              props.day.toLocaleDateString("fr", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+              })
+            }}
+          </v-btn>
         </td>
       </tr>
       <tr v-for="(_, timeIndex) in TimeGrid.Length">
@@ -22,9 +27,9 @@
               pro.horaires,
               timeIndex
             )
-              ? '#' + pro.pro.color.slice(2)
+              ? pro.pro.color
               : '',
-            'border-top': timeIndex % 12 == 0 ? '1px solid lightgrey' : '',
+            'border-top': borderTop(timeIndex),
           }"
         ></td>
       </tr>
@@ -39,9 +44,21 @@ import type { HoraireTravail, Pro } from "@/logic/personnel";
 const props = defineProps<{
   day: Date;
   pros: { pro: Pro; horaires: HoraireTravail }[];
+  diagnosticMark: TimeGrid.Index | null;
 }>();
 
-const emit = defineEmits<{}>();
+const emit = defineEmits<{
+  (e: "edit"): void;
+}>();
+
+function borderTop(index: TimeGrid.Index) {
+  if (index == props.diagnosticMark) {
+    return "4px solid orange";
+  } else if (index % 12 == 0) {
+    return "1px solid lightgrey";
+  }
+  return "";
+}
 </script>
 
 <style>

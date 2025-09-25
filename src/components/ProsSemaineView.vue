@@ -3,59 +3,21 @@
     <v-col cols="auto">
       <ProsDayHorairesHeader></ProsDayHorairesHeader>
     </v-col>
-    <v-col cols="auto">
+    <v-col cols="auto" v-for="(_, dayIndex) in 5">
       <ProsDayView
-        :pros="byDay(0)"
+        :pros="byDay(dayIndex)"
         :day="
           computeDate(props.firstMonday, {
             week: props.planning.week,
-            day: 0,
+            day: dayIndex,
           })
         "
-      ></ProsDayView>
-    </v-col>
-    <v-col cols="auto">
-      <ProsDayView
-        :pros="byDay(1)"
-        :day="
-          computeDate(props.firstMonday, {
-            week: props.planning.week,
-            day: 1,
-          })
+        :diagnostic-mark="
+          selectedDiagnostic?.dayIndex.day == dayIndex
+            ? selectedDiagnostic.horaireIndex
+            : null
         "
-      ></ProsDayView>
-    </v-col>
-    <v-col cols="auto">
-      <ProsDayView
-        :pros="byDay(2)"
-        :day="
-          computeDate(props.firstMonday, {
-            week: props.planning.week,
-            day: 2,
-          })
-        "
-      ></ProsDayView>
-    </v-col>
-    <v-col cols="auto">
-      <ProsDayView
-        :pros="byDay(3)"
-        :day="
-          computeDate(props.firstMonday, {
-            week: props.planning.week,
-            day: 3,
-          })
-        "
-      ></ProsDayView>
-    </v-col>
-    <v-col cols="auto">
-      <ProsDayView
-        :pros="byDay(4)"
-        :day="
-          computeDate(props.firstMonday, {
-            week: props.planning.week,
-            day: 4,
-          })
-        "
+        @edit="dayToEdit = dayIndex"
       ></ProsDayView>
     </v-col>
 
@@ -64,14 +26,22 @@
     <v-col>
       <v-card subtitle="Diagnostics" class="mx-2">
         <v-card-text class="px-1">
-          <v-list lines="three" density="compact">
+          <v-list
+            lines="three"
+            density="compact"
+            v-model="selectedDiagnosticIndex"
+            select-strategy="single-leaf"
+          >
             <v-list-item v-if="!props.diagnostics.length" class="text-center">
               <i>Aucun problème n'est détecté sur cette semaine.</i>
             </v-list-item>
             <v-list-item
-              v-for="diagnostic in props.diagnostics"
+              v-for="(diagnostic, index) in props.diagnostics"
               :title="kindLabels[diagnostic.check.kind]"
               :subtitle="formatCheck(diagnostic.check)"
+              :value="index"
+              @click="selectedDiagnosticIndex = index"
+              rounded
             >
               <template #append>
                 <small class="text-muted ml-2">
@@ -94,11 +64,30 @@
         </v-card-text>
       </v-card>
     </v-col>
+
+    <!-- edit horaire -->
+    <v-dialog
+      :model-value="dayToEdit != null"
+      @update:model-value="dayToEdit = null"
+      max-width="800px"
+    >
+      <ProsDayHorairesEdit
+        v-if="dayToEdit != null"
+        :pros="byDay(dayToEdit)"
+        @save="(v) => {
+            emit('editHoraires', dayToEdit!, v); 
+            dayToEdit = null;
+        }"
+      ></ProsDayHorairesEdit>
+    </v-dialog>
   </v-row>
 </template>
 
 <script lang="ts" setup>
-import { type PlanningProsSemaine } from "@/logic/personnel";
+import {
+  type HoraireTravail,
+  type PlanningProsSemaine,
+} from "@/logic/personnel";
 import ProsDayView from "./ProsDayView.vue";
 import { computeDate, formatHoraire, type int } from "@/logic/shared";
 import ProsDayHorairesHeader from "./ProsDayHorairesHeader.vue";
@@ -108,6 +97,8 @@ import {
   type Check,
   type Diagnostic,
 } from "@/logic/check";
+import { computed, ref } from "vue";
+import ProsDayHorairesEdit from "./ProsDayHorairesEdit.vue";
 
 const props = defineProps<{
   firstMonday: Date;
@@ -115,7 +106,9 @@ const props = defineProps<{
   diagnostics: Diagnostic[]; // restricted to the week
 }>();
 
-const emit = defineEmits<{}>();
+const emit = defineEmits<{
+  (e: "editHoraires", dayIndex: int, horaires: HoraireTravail[]): void;
+}>();
 
 function byDay(day: int) {
   return props.planning.prosHoraires.map((pro) => ({
@@ -124,6 +117,12 @@ function byDay(day: int) {
   }));
 }
 
+const selectedDiagnosticIndex = ref<int | null>(null);
+const selectedDiagnostic = computed(() =>
+  selectedDiagnosticIndex.value == null
+    ? null
+    : props.diagnostics[selectedDiagnosticIndex.value]
+);
 const kindLabels = [
   "Adaptation",
   "Nombre d'enfants",
@@ -147,6 +146,8 @@ function formatCheck(check: Check): string {
       )} au lieu de ${formatHoraire(check.expectedLendemain)}`;
   }
 }
+
+const dayToEdit = ref<int | null>(null);
 </script>
 
 <style></style>

@@ -27,6 +27,10 @@
             :first-monday="props.planningPros.firstMonday"
             :planning="planningWeek"
             :diagnostics="diagnosticFor(planningWeek.week)"
+            @edit-horaires="
+              (d, v) =>
+                emit('editHoraires', { week: planningWeek.week, day: d }, v)
+            "
           ></ProsSemaineView>
         </v-tabs-window-item>
       </v-tabs-window>
@@ -43,11 +47,11 @@
 </template>
 
 <script lang="ts" setup>
-import { type PlanningPros } from "@/logic/personnel";
-import { computeDate, type int } from "@/logic/shared";
+import { type HoraireTravail, type PlanningPros } from "@/logic/personnel";
+import { computeDate, type DayIndex, type int } from "@/logic/shared";
 import { computed, ref } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";
-import { check, TimeGrid, type Diagnostic } from "@/logic/check";
+import { TimeGrid, type Diagnostic } from "@/logic/check";
 import type { PlanningChildren } from "@/logic/enfants";
 
 const props = defineProps<{
@@ -56,6 +60,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  (e: "editHoraires", index: DayIndex, horaires: HoraireTravail[]): void;
   (e: "goBack"): void;
 }>();
 
@@ -103,7 +108,7 @@ const diagnostics = computed(
         },
       },
       {
-        dayIndex: { week: 0, day: 1 },
+        dayIndex: { week: 1, day: 1 },
         horaireIndex: TimeGrid.horaireToIndex({ heure: 13, minute: 40 }),
         check: {
           kind: 2,
@@ -112,7 +117,7 @@ const diagnostics = computed(
         },
       },
       {
-        dayIndex: { week: 0, day: 1 },
+        dayIndex: { week: 0, day: 2 },
         horaireIndex: TimeGrid.horaireToIndex({ heure: 13, minute: 40 }),
         check: {
           kind: 3,

@@ -36,7 +36,7 @@ const enfantNonMarcheur: Enfant = {
 
 const pro: Pro = {
   prenom: "Audrey",
-  color: "FFFFFFFF",
+  color: "#FFFFFF",
 };
 
 function h(h: Heure, m: Minute) {
