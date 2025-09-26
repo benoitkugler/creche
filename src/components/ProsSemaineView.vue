@@ -1,7 +1,9 @@
 <template>
   <v-row justify="center" no-gutters class="mt-1">
     <v-col cols="auto">
-      <ProsDayHorairesHeader></ProsDayHorairesHeader>
+      <ProsDayHorairesHeader
+        @edit-detachements="showEditDetachements = true"
+      ></ProsDayHorairesHeader>
     </v-col>
     <v-col cols="auto" v-for="(_, dayIndex) in 5">
       <ProsDayView
@@ -24,7 +26,7 @@
     <!-- diagnostics -->
 
     <v-col>
-      <v-card subtitle="Diagnostics" class="mx-2">
+      <v-card subtitle="Diagnostics" class="mx-2 overflow-y-auto" height="80vh">
         <v-card-text class="px-1">
           <v-list
             lines="three"
@@ -80,11 +82,25 @@
         }"
       ></ProsDayHorairesEdit>
     </v-dialog>
+
+    <!-- edit détachements -->
+    <v-dialog v-model="showEditDetachements" max-width="800px">
+      <ProsSemaineDetachementsEdit
+        :pros="props.planning.prosHoraires"
+        @save="
+          (v) => {
+            emit('editDetachements', v);
+            showEditDetachements = false;
+          }
+        "
+      ></ProsSemaineDetachementsEdit>
+    </v-dialog>
   </v-row>
 </template>
 
 <script lang="ts" setup>
 import {
+  type Detachement,
   type HoraireTravail,
   type PlanningProsSemaine,
 } from "@/logic/personnel";
@@ -99,6 +115,7 @@ import {
 } from "@/logic/check";
 import { computed, ref } from "vue";
 import ProsDayHorairesEdit from "./ProsDayHorairesEdit.vue";
+import ProsSemaineDetachementsEdit from "./ProsSemaineDetachementsEdit.vue";
 
 const props = defineProps<{
   firstMonday: Date;
@@ -108,6 +125,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "editHoraires", dayIndex: int, horaires: HoraireTravail[]): void;
+  (e: "editDetachements", detachements: (Detachement | undefined)[]): void;
 }>();
 
 function byDay(day: int) {
@@ -186,6 +204,8 @@ function formatCheck(check: Check): string {
 }
 
 const dayToEdit = ref<int | null>(null);
+
+const showEditDetachements = ref(false);
 </script>
 
 <style></style>

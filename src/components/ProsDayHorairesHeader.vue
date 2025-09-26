@@ -2,7 +2,14 @@
   <table class="pros-calendar-day-header">
     <tbody>
       <tr>
-        <td style="height: 32px"></td>
+        <td style="height: 32px">
+          <v-btn size="small" flat @click="emit('edit-detachements')">
+            <template #append>
+              <v-icon>mdi-pencil</v-icon>
+            </template>
+            Détachements</v-btn
+          >
+        </td>
       </tr>
       <tr v-for="(_, timeIndex) in TimeGrid.Length">
         <td
@@ -12,6 +19,7 @@
             padding: '0px 4px',
             height: '36px',
           }"
+          class="text-center"
         >
           {{ formatHoraire(TimeGrid.indexToHoraire(timeIndex)) }}
         </td>
@@ -26,7 +34,9 @@ import { formatHoraire } from "@/logic/shared";
 
 const props = defineProps<{}>();
 
-const emit = defineEmits<{}>();
+const emit = defineEmits<{
+  (e: "edit-detachements"): void;
+}>();
 </script>
 
 <style>

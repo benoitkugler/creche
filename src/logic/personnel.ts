@@ -19,10 +19,12 @@ export type HoraireTravail = {
   pause: Range;
 };
 
-type SemainePro = {
+export type Detachement = { dayIndex: int; horaires: Range };
+
+export type SemainePro = {
   pro: Pro;
   horaires: SemaineOf<HoraireTravail>;
-  detachement?: { dayIndex: int; horaires: Range };
+  detachement?: Detachement;
 };
 
 export type PlanningProsSemaine = {

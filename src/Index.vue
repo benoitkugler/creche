@@ -24,6 +24,7 @@
       :planning-children="planningChildren"
       :planning-pros="planningPros"
       @edit-horaires="editHorairesPros"
+      @edit-detachements="editDetachementsPros"
       @go-back="step = 'view-children'"
     ></ProsCalendar>
 
@@ -43,9 +44,13 @@ import "@/wasm_exec";
 
 import FilesLoader from "./components/FilesLoader.vue";
 import type { PlanningChildren } from "./logic/enfants";
-import type { HoraireTravail, PlanningPros } from "./logic/personnel";
+import type {
+  Detachement,
+  HoraireTravail,
+  PlanningPros,
+} from "./logic/personnel";
 import ChildrenCalendar from "./components/ChildrenCalendar.vue";
-import { fromJson, type DayIndex } from "./logic/shared";
+import { fromJson, type DayIndex, type int } from "./logic/shared";
 import ProsCalendar from "./components/ProsCalendar.vue";
 
 /**
@@ -122,6 +127,17 @@ function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
   if (l.length != horaires.length) return; // should not happen
   horaires.forEach((v, i) => (l[i].horaires[day.day] = v));
   successMessage.value = "Horaires modifiés avec succès.";
+  save();
+}
+
+function editDetachementsPros(
+  week: int,
+  detachements: (Detachement | undefined)[]
+) {
+  const l = planningPros.value.semaines[week].prosHoraires;
+  if (l.length != detachements.length) return; // should not happen
+  detachements.forEach((v, i) => (l[i].detachement = v));
+  successMessage.value = "Détachements modifiés avec succès.";
   save();
 }
 </script>
