@@ -645,6 +645,10 @@ test("check sample 1", async () => {
   expect(isError(planningChildren)).toBeFalse();
   if (isError(planningChildren)) return;
 
+  for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
+    planningChildren.enfants[index].enfant.isMarcheur = true;
+  }
+
   const prosF = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
   const planningPros = await Pros.parseExcelPros(
     prosF,
@@ -653,5 +657,5 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(63);
+  expect(check(planningChildren, planningPros)).toHaveLength(55);
 });
