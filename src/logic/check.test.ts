@@ -1,26 +1,31 @@
 import { expect, test } from "bun:test";
 import {
+  _checkAdaptationHoraires,
   _checkEnfantsCount,
+  _checkPauses,
   _checkProsArrivals,
   _checkRepos,
   _checkReunion,
-  _normalizeEnfants,
+  _normalizeChildren,
   _normalizePros,
+  check,
   CheckKind,
   ChildrenCount,
   TimeGrid,
 } from "./check";
-import type { Enfant } from "./enfants";
+import { Children, type Enfant, type TextBlock } from "./enfants";
 import {
   computeDate,
   HeureMax,
   HeureMin,
+  isError,
   Range,
   type Heure,
+  type Horaire,
   type int,
   type Minute,
 } from "./shared";
-import type { PlanningPros, Pro } from "./personnel";
+import { Pros, type PlanningPros, type Pro } from "./personnel";
 
 const enfantMarcheur: Enfant = {
   nom: "Benoit",
@@ -42,8 +47,54 @@ function h(h: Heure, m: Minute) {
   return { heure: h, minute: m };
 }
 
+function r(debut: Horaire, fin: Horaire) {
+  return new Range(debut, fin);
+}
+
+test("date", () => {
+  expect(
+    computeDate(
+      new Date(2025, 8, 1),
+      { week: 0, day: 0 },
+      h(6, 25)
+    ).toISOString()
+  ).toBe("2025-09-01T06:25:00.000Z");
+  expect(
+    computeDate(
+      new Date(2025, 8, 1),
+      { week: 0, day: 1 },
+      h(6, 0)
+    ).toISOString()
+  ).toBe("2025-09-02T06:00:00.000Z");
+  expect(
+    computeDate(
+      new Date(2025, 8, 1),
+      { week: 1, day: 1 },
+      h(6, 0)
+    ).toISOString()
+  ).toBe("2025-09-09T06:00:00.000Z");
+});
+
+test("range duration", () => {
+  expect(r(h(6, 0), h(6, 45)).duration()).toBe(45);
+  expect(r(h(6, 0), h(7, 0)).duration()).toBe(60);
+  expect(r(h(6, 15), h(7, 0)).duration()).toBe(45);
+  expect(r(h(6, 15), h(7, 5)).duration()).toBe(50);
+  expect(r(h(6, 0), h(8, 0)).duration()).toBe(120);
+  expect(r(h(7, 0), h(7, 0)).duration()).toBe(0);
+});
+
+test("range overlaps", () => {
+  expect(r(h(6, 0), h(6, 45)).overlaps(r(h(6, 0), h(6, 45)))).toBeTrue();
+  expect(r(h(6, 0), h(7, 0)).overlaps(r(h(6, 0), h(7, 30)))).toBeTrue();
+  expect(r(h(6, 15), h(7, 0)).overlaps(r(h(6, 15), h(6, 30)))).toBeTrue();
+  expect(r(h(6, 15), h(7, 5)).overlaps(r(h(6, 0), h(6, 30)))).toBeTrue();
+  expect(r(h(6, 15), h(7, 5)).overlaps(r(h(6, 0), h(6, 15)))).toBeFalse();
+  expect(r(h(6, 15), h(7, 5)).overlaps(r(h(7, 5), h(7, 15)))).toBeFalse();
+});
+
 test("normalize enfants", () => {
-  const grid = _normalizeEnfants({
+  const grid = _normalizeChildren({
     firstMonday: new Date(),
     enfants: [
       {
@@ -125,6 +176,10 @@ test("normalize pros", () => {
                 pause: new Range(h(10, 30), h(11, 0)),
               },
             ],
+            detachement: {
+              dayIndex: 4,
+              horaires: new Range(h(11, 0), h(11, 15)),
+            },
           },
           {
             pro,
@@ -157,11 +212,14 @@ test("normalize pros", () => {
   });
 
   expect(grid[0][0].length).toBe(12 * (HeureMax - HeureMin));
-  const day = grid[1][0];
-  expect(day[0]).toBe(2);
-  expect(day[TimeGrid.horaireToIndex(h(10, 30))]).toBe(0);
-  expect(day[TimeGrid.horaireToIndex(h(13, 30))]).toBe(1);
-  expect(day[TimeGrid.horaireToIndex(h(18, 0))]).toBe(0);
+  const monday = grid[1][0];
+  expect(monday[0]).toBe(2);
+  expect(monday[TimeGrid.horaireToIndex(h(10, 30))]).toBe(0);
+  expect(monday[TimeGrid.horaireToIndex(h(13, 30))]).toBe(1);
+  expect(monday[TimeGrid.horaireToIndex(h(18, 0))]).toBe(0);
+  const friday = grid[1][4]; // détachement
+  expect(friday[TimeGrid.horaireToIndex(h(11, 0))]).toBe(1);
+  expect(friday[TimeGrid.horaireToIndex(h(11, 15))]).toBe(2);
 });
 
 function ec(adaptionCount: int, marcheurCount: int, nonMarcheurCount: int) {
@@ -197,30 +255,6 @@ test("check enfants count", () => {
   expect(_checkEnfantsCount(ec(1, 3, 4), 3)?.kind).toBe(
     CheckKind.MissingProForEnfants
   );
-});
-
-test("date", () => {
-  expect(
-    computeDate(
-      new Date(2025, 8, 1),
-      { week: 0, day: 0 },
-      h(6, 25)
-    ).toISOString()
-  ).toBe("2025-09-01T06:25:00.000Z");
-  expect(
-    computeDate(
-      new Date(2025, 8, 1),
-      { week: 0, day: 1 },
-      h(6, 0)
-    ).toISOString()
-  ).toBe("2025-09-02T06:00:00.000Z");
-  expect(
-    computeDate(
-      new Date(2025, 8, 1),
-      { week: 1, day: 1 },
-      h(6, 0)
-    ).toISOString()
-  ).toBe("2025-09-09T06:00:00.000Z");
 });
 
 test("check reunion1", () => {
@@ -543,4 +577,81 @@ test("check pro arrivals", () => {
       [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0]
     )
   ).toHaveLength(4);
+});
+
+test("check adaptations horaires", () => {
+  expect(_checkAdaptationHoraires(r(h(6, 0), h(7, 0)))).not.toBeUndefined();
+  expect(_checkAdaptationHoraires(r(h(10, 0), h(10, 30)))).toBeUndefined();
+  expect(_checkAdaptationHoraires(r(h(9, 45), h(11, 45)))).not.toBeUndefined();
+});
+
+test("check pauses", () => {
+  const dayIndex = { week: 0, day: 0 };
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(6, 0), h(7, 0)),
+      pause: Range.empty(),
+    })
+  ).toHaveLength(0);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(6, 0), h(11, 45)),
+      pause: Range.empty(),
+    })
+  ).toHaveLength(0);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(6, 0), h(12, 0)),
+      pause: Range.empty(),
+    })
+  ).toHaveLength(1);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(11, 0), h(14, 0)),
+      pause: Range.empty(),
+    })
+  ).toHaveLength(1);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(13, 0), h(14, 0)),
+      pause: Range.empty(),
+    })
+  ).toHaveLength(0);
+
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(11, 0), h(14, 0)),
+      pause: r(h(13, 30), h(14, 0)),
+    })
+  ).toHaveLength(0);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(11, 0), h(14, 0)),
+      pause: r(h(12, 50), h(14, 0)),
+    })
+  ).toHaveLength(2);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(11, 0), h(14, 0)),
+      pause: r(h(13, 0), h(13, 10)),
+    })
+  ).toHaveLength(1);
+});
+
+test("check sample 1", async () => {
+  const childrenF = Bun.file("src/logic/sample_enfants_redacted_1.json");
+  const data: TextBlock[] = await childrenF.json();
+  const planningChildren = Children.parsePDFEnfants(data);
+  expect(isError(planningChildren)).toBeFalse();
+  if (isError(planningChildren)) return;
+
+  const prosF = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+  const planningPros = await Pros.parseExcelPros(
+    prosF,
+    planningChildren.firstMonday
+  );
+  expect(isError(planningPros)).toBeFalse();
+  if (isError(planningPros)) return;
+
+  expect(check(planningChildren, planningPros)).toHaveLength(63);
 });

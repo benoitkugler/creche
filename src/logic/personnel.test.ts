@@ -3,7 +3,7 @@ import { Pros } from "./personnel";
 import { isError, Range } from "./shared";
 
 test("parse personnel", async () => {
-  const file = Bun.file("src/logic/sample_personnel.xlsx");
+  const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
 
   const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 1));
   expect(isError(planning)).toBeFalse();

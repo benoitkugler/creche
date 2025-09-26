@@ -22,6 +22,7 @@ export type HoraireTravail = {
 type SemainePro = {
   pro: Pro;
   horaires: SemaineOf<HoraireTravail>;
+  detachement?: { dayIndex: int; horaires: Range };
 };
 
 export type PlanningProsSemaine = {
@@ -176,7 +177,10 @@ function parseHorairesPros(
   );
   if (isError(d5)) return d5;
 
-  return { pro, horaires: [d1, d2, d3, d4, d5] };
+  return {
+    pro,
+    horaires: [d1, d2, d3, d4, d5],
+  };
 }
 
 function parseHorairesDay(

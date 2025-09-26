@@ -39,6 +39,22 @@ export class Range {
     if (other.isEmpty()) return true;
     return isBefore(this.debut, other.debut) && isBefore(other.fin, this.fin);
   }
+
+  /** returns true is the intersection is non empty */
+  overlaps(other: Range) {
+    const intersection = new Range(
+      isBefore(this.debut, other.debut) ? other.debut : this.debut,
+      isBefore(this.fin, other.fin) ? this.fin : other.fin
+    );
+    return !intersection.isEmpty();
+  }
+
+  /** renvoie la durée en minutes */
+  duration(): int {
+    const debutM = this.debut.heure * 60 + this.debut.minute;
+    const finM = this.fin.heure * 60 + this.fin.minute;
+    return finM - debutM;
+  }
 }
 
 // accept dd:dd dd:dd

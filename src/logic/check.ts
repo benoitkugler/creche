@@ -18,8 +18,6 @@ import {
   type SemaineOf,
 } from "./shared";
 
-// TODO: que faire d'un groupe mixte avec une seule pro ?
-
 export type Diagnostic = {
   dayIndex: DayIndex;
   horaireIndex: int;
@@ -31,6 +29,11 @@ export const CheckKind = {
   MissingProForEnfants: 1,
   MissingProAtReunion: 2,
   NotEnoughSleep: 3,
+  MissingPause: 4,
+  WrongPauseDuration: 5,
+  WrongPauseHoraire: 6,
+  WrongDepartArriveePro: 7,
+  WrongAdaptationHoraire: 8,
 } as const;
 export type CheckKind = (typeof CheckKind)[keyof typeof CheckKind];
 
@@ -46,10 +49,37 @@ export type Check =
     } & MissingProAtReunion)
   | ({
       kind: (typeof CheckKind)["NotEnoughSleep"];
-    } & NotEnoughSleep);
+    } & NotEnoughSleep)
+  | ({
+      kind: (typeof CheckKind)["MissingPause"];
+    } & MissingPause)
+  | ({
+      kind: (typeof CheckKind)["WrongPauseDuration"];
+    } & WrongPauseDuration)
+  | ({
+      kind: (typeof CheckKind)["WrongPauseHoraire"];
+    } & WrongPauseHoraire)
+  | ({
+      kind: (typeof CheckKind)["WrongDepartArriveePro"];
+    } & WrongDepartArriveePro)
+  | ({
+      kind: (typeof CheckKind)["WrongAdaptationHoraire"];
+    } & WrongAdaptationHoraire);
 
 /** This user-friendly list documents the various checks implemented in this file. */
 export const CheckDescription = [
+  [
+    "Enfants 1",
+    "Une pro seule doit avoir au maximum 3 enfants (marcheurs ou non).",
+  ],
+  [
+    "Enfants 2",
+    "A partir de deux pros, le maximum d’enfants par pro est 5 non-marcheurs ou 8 marcheurs. Un enfant marcheur peut compléter un groupe de non-marcheurs.",
+  ],
+  [
+    "Détachement",
+    "Une pro marquée en détachement ne peut pas s’occuper d’enfants.",
+  ],
   [
     "Arrivée",
     "La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.",
@@ -57,6 +87,30 @@ export const CheckDescription = [
   [
     "Départ",
     "L’avant-dernière pro doit partir 15 min après le 4° enfant restant, la dernière pro 30 min après le dernier enfant. ",
+  ],
+  ["Adaptation 1", "Une adaptation occupe une pro à part entière."],
+  [
+    "Adaptation 2",
+    "Une adaptation doit se produire dans les créneaux suivants : 9h30 à 11h30, 10h à 12h30, 13h à 15h30 ou 14h30 à 16h45",
+  ],
+  [
+    "Pause 1",
+    "Chaque pro doit avoir entre 30 min et 1h de pause, à partir de 6h de travail.",
+  ],
+  [
+    "Pause 2",
+    "Pour strictement moins de 6h de travail, si l’arrivée est entre 11h et 12h, une pro doit avoir une pause.",
+  ],
+  ["Pause 3", "Aucune pause entre 11h30 et 13h (à cause des repas)."],
+  [
+    "Réunion 1",
+    "Toutes les pro doivent être présentes le mardi de 13h30 à 14h30.",
+  ],
+  ["Réunion 2", "Sur ce créneau, les enfants sont considérés comme gardés."],
+
+  [
+    "Repos",
+    "Il doit y avoir au moins 11h de repos entre la fin d’un service et le début du prochain.",
   ],
 ] as const;
 
@@ -66,10 +120,88 @@ export const CheckDescription = [
  * La liste renvoyée est vide si et seulement si aucun problème n'est détecté.
  */
 export function check(
-  enfants: PlanningChildren,
+  children: PlanningChildren,
   pros: PlanningPros
 ): Diagnostic[] {
-  return [];
+  const normalizedChildren = _normalizeChildren(children);
+  const normalizedPros = _normalizePros(pros);
+
+  const out: Diagnostic[] = [];
+  normalizedPros.forEach((week, weekI) => {
+    week.forEach((dayPros, dayI) => {
+      const dayChildren = normalizedChildren[weekI][dayI];
+      const dayIndex = { week: weekI, day: dayI };
+
+      // Enfants 1, Enfants 2 et Reunion 2, Adaptation 1
+      for (let timeI = 0; timeI < dayChildren.length; timeI++) {
+        const count = dayChildren[timeI];
+        if (horairesReunion.contains(TimeGrid.indexToHoraire(timeI))) {
+          continue;
+        }
+        const pros = dayPros[timeI];
+        const check = _checkEnfantsCount(count, pros);
+        if (check !== undefined) {
+          out.push({
+            dayIndex,
+            horaireIndex: timeI,
+            check,
+          });
+          break; // only include one check by day
+        }
+      }
+
+      // Arrivée et départ
+      const l = _checkProsArrivals(dayChildren, dayPros);
+      out.push(
+        ...l.map((c) => ({
+          dayIndex,
+          horaireIndex: 0,
+          check: { kind: CheckKind.WrongDepartArriveePro, ...c },
+        }))
+      );
+    });
+  });
+
+  // Adaptation 2
+  children.enfants.forEach((child) => {
+    child.creneaux.forEach((week, weekI) => {
+      week.forEach((day, dayI) => {
+        if (day == null || !day.isAdaptation) return;
+
+        const c = _checkAdaptationHoraires(day.horaires);
+        if (c !== undefined) {
+          out.push({
+            dayIndex: { week: weekI, day: dayI },
+            horaireIndex: 0,
+            check: { kind: CheckKind.WrongAdaptationHoraire, ...c },
+          });
+        }
+      });
+    });
+  });
+
+  // Pause 1, Pause2 et Pause3
+  pros.semaines.forEach((semaine) => {
+    semaine.prosHoraires.forEach((semainePro) => {
+      semainePro.horaires.forEach((day, dayI) => {
+        out.push(
+          ..._checkPauses(
+            { week: semaine.week, day: dayI },
+            semainePro.pro,
+            day
+          )
+        );
+      });
+    });
+  });
+
+  // Reunion 1
+  out.push(..._checkReunion(pros));
+
+  // Repos
+  out.push(..._checkRepos(pros));
+
+  return out;
 }
 
 /** To simplify checks we normalize the creneaux to a regular 5-min spaced slice */
@@ -97,6 +229,18 @@ export namespace TimeGrid {
     return (
       horaires.presence.contains(horaire) && !horaires.pause.contains(horaire)
     );
+  }
+
+  export function rangeToBounds(range: Range) {
+    return [
+      TimeGrid.horaireToIndex(range.debut),
+      TimeGrid.horaireToIndex(range.fin),
+    ];
+  }
+
+  export function rangeToIndexes(range: Range): ReadonlyArray<TimeGrid.Index> {
+    const [start, end] = rangeToBounds(range);
+    return [...Array(end - start).keys()].map((i) => i + start);
   }
 }
 
@@ -127,7 +271,7 @@ function emptyDayEnfants() {
   return Array.from({ length: TimeGrid.Length }, () => ChildrenCount.zero());
 }
 
-export function _normalizeEnfants(
+export function _normalizeChildren(
   input: PlanningChildren
 ): Grid<ChildrenCount> {
   const out = Array.from(
@@ -147,9 +291,7 @@ export function _normalizeEnfants(
       semaine.forEach((day, iDay) => {
         if (day === null) return;
         const currentDay = out[iSemaine][iDay];
-        const indexDebut = TimeGrid.horaireToIndex(day.horaires.debut);
-        const indexFin = TimeGrid.horaireToIndex(day.horaires.fin);
-        for (let index = indexDebut; index < indexFin; index++) {
+        for (const index of TimeGrid.rangeToIndexes(day.horaires)) {
           if (day.isAdaptation) {
             currentDay[index].adaptionCount += 1;
           } else if (enfant.enfant.isMarcheur) {
@@ -187,18 +329,20 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
     semaine.prosHoraires.forEach((pro) => {
       pro.horaires.forEach((day, iDay) => {
         const currentDay = out[iSemaine][iDay];
-        // gestion de la pause : 2 plages
-        const indexDebut1 = TimeGrid.horaireToIndex(day.presence.debut);
-        const indexFin1 = TimeGrid.horaireToIndex(day.pause.debut);
-        for (let index = indexDebut1; index < indexFin1; index++) {
-          currentDay[index] += 1;
-        }
-        const indexDebut2 = TimeGrid.horaireToIndex(day.pause.fin);
-        const indexFin2 = TimeGrid.horaireToIndex(day.presence.fin);
-        for (let index = indexDebut2; index < indexFin2; index++) {
+        const [pauseStart, pauseEnd] = TimeGrid.rangeToBounds(day.pause);
+        for (const index of TimeGrid.rangeToIndexes(day.presence)) {
+          // gestion de la pause : 2 plages (attention au plages vides)
+          if (pauseStart <= index && index < pauseEnd) continue;
           currentDay[index] += 1;
         }
       });
+      // handle detachement
+      if (pro.detachement) {
+        const currentDay = out[iSemaine][pro.detachement.dayIndex];
+        for (const index of TimeGrid.rangeToIndexes(pro.detachement.horaires)) {
+          currentDay[index] -= 1;
+        }
+      }
     });
   });
 
@@ -208,7 +352,6 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
 type MissingProAdaption = { got: int; expect: int };
 type MissingProForEnfants = { got: int; expect: int };
 
-// TODO: check and document the rules
 export function _checkEnfantsCount(
   enfants: ChildrenCount,
   pros: int
@@ -265,6 +408,28 @@ export function _checkEnfantsCount(
   return;
 }
 
+type WrongAdaptationHoraire = {
+  got: Range;
+};
+
+export function _checkAdaptationHoraires(
+  childHoraires: Range
+): WrongAdaptationHoraire | undefined {
+  const accepted = [
+    new Range({ heure: 9, minute: 30 }, { heure: 11, minute: 30 }),
+    new Range({ heure: 10, minute: 0 }, { heure: 12, minute: 30 }),
+    new Range({ heure: 13, minute: 0 }, { heure: 15, minute: 30 }),
+    new Range({ heure: 14, minute: 30 }, { heure: 16, minute: 45 }),
+  ] as const;
+  for (const ok of accepted) {
+    if (ok.includes(childHoraires)) {
+      // all good
+      return;
+    }
+  }
+  return { got: childHoraires };
+}
+
 type WrongDepartArriveePro = {
   moment: "first-arrival" | "second-arrival" | "before-last-go" | "last-go";
   expected: Horaire;
@@ -279,7 +444,7 @@ export function _checkProsArrivals(enfants: ChildrenCount[], pros: int[]) {
   // first arrival
   const indexFirstChild = enfants.findIndex((c) => c.count() > 0);
   // if there is no kids, all good !
-  if (indexFirstChild == -1) return;
+  if (indexFirstChild == -1) return [];
 
   const expectedFirstPro = indexFirstChild - minutesToIndex(15);
   const indexFirstPro = pros.findIndex((p) => p != 0);
@@ -335,14 +500,83 @@ export function _checkProsArrivals(enfants: ChildrenCount[], pros: int[]) {
   return out;
 }
 
+type MissingPause = { pro: Pro };
+type WrongPauseDuration = { pro: Pro; got: int };
+type WrongPauseHoraire = { pro: Pro; got: Range };
+
+export function _checkPauses(
+  dayIndex: DayIndex,
+  pro: Pro,
+  horaires: HoraireTravail
+): Diagnostic[] {
+  const thresholdInMinutes = 6 * 60;
+  const arrivalInMeal = new Range(
+    { heure: 11, minute: 0 },
+    { heure: 12, minute: 0 }
+  );
+
+  const repas = new Range({ heure: 11, minute: 30 }, { heure: 13, minute: 0 });
+  if (horaires.pause.isEmpty()) {
+    // check it was not mandatory
+    const workDuration = horaires.presence.duration();
+    const isPauseMandatory =
+      workDuration >= thresholdInMinutes ||
+      arrivalInMeal.contains(horaires.presence.debut);
+
+    if (isPauseMandatory) {
+      return [
+        {
+          dayIndex,
+          horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+          check: {
+            kind: CheckKind.MissingPause,
+            pro,
+          },
+        },
+      ];
+    }
+    return [];
+  }
+
+  // check the pause is valid
+  const out: Diagnostic[] = [];
+  if (repas.overlaps(horaires.pause)) {
+    out.push({
+      dayIndex,
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      check: {
+        kind: CheckKind.WrongPauseHoraire,
+        pro,
+        got: horaires.pause,
+      },
+    });
+  }
+
+  const duration = horaires.pause.duration();
+  if (duration < 30 || duration > 60) {
+    out.push({
+      dayIndex,
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      check: {
+        kind: CheckKind.WrongPauseDuration,
+        pro,
+        got: duration,
+      },
+    });
+  }
+
+  return out;
+}
+
 type MissingProAtReunion = { got: int; expect: int };
+
+const horairesReunion = new Range(
+  { heure: 13, minute: 30 },
+  { heure: 14, minute: 30 }
+);
 
 export function _checkReunion(pros: PlanningPros): Diagnostic[] {
   const reunionDayIndex = 1; // index in week, mardi
-  const horaireReunion = new Range(
-    { heure: 13, minute: 30 },
-    { heure: 14, minute: 30 }
-  );
 
   const out: Diagnostic[] = [];
 
@@ -351,12 +585,9 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
     const prosCount = semaine.prosHoraires.length; // total number of pros this week
     const reunionDay = grid[semaine.week][reunionDayIndex]; // day of the reunion in this week
     // select the reunion horaire and check
-    const indexStart = TimeGrid.horaireToIndex(horaireReunion.debut);
-    const indexEnd = TimeGrid.horaireToIndex(horaireReunion.fin);
-    for (let index = indexStart; index < indexEnd; index++) {
+    for (const index of TimeGrid.rangeToIndexes(horairesReunion)) {
       const prosPresent = reunionDay[index];
       if (prosPresent < prosCount) {
-        const horaire = TimeGrid.indexToHoraire(index);
         out.push({
           dayIndex: { week: semaine.week, day: reunionDayIndex },
           horaireIndex: index,
