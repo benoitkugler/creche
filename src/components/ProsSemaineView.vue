@@ -128,6 +128,11 @@ const kindLabels = [
   "Nombre d'enfants",
   "Réunion hebdomadaire",
   "Temps de repos",
+  "Pause manquante",
+  "Durée de la pause",
+  "Horaires de la pause",
+  "Départ ou arrivée d'une pro.",
+  "Horaires d'une adaptation",
 ] as const;
 
 function formatCheck(check: Check): string {
@@ -144,6 +149,39 @@ function formatCheck(check: Check): string {
       } : reprise le lendemain à ${formatHoraire(
         check.gotLendemain
       )} au lieu de ${formatHoraire(check.expectedLendemain)}`;
+    case CheckKind.MissingPause:
+      return `Pause manquante pour ${check.pro.prenom}`;
+    case CheckKind.WrongPauseDuration:
+      return `Durée de la pause invalide pour ${check.pro.prenom} (${check.got} minutes).`;
+    case CheckKind.WrongPauseHoraire:
+      return `Horaires de la pause invalides pour ${
+        check.pro.prenom
+      } (de ${formatHoraire(check.got.debut)} à ${formatHoraire(
+        check.got.fin
+      )}).`;
+    case CheckKind.WrongDepartArriveePro:
+      switch (check.moment) {
+        case "first-arrival":
+          return `Arrivée de la première pro à ${formatHoraire(
+            check.got
+          )} (au lieu de ${formatHoraire(check.expected)})`;
+        case "second-arrival":
+          return `Arrivée de la deuxième pro à ${formatHoraire(
+            check.got
+          )} (au lieu de ${formatHoraire(check.expected)})`;
+        case "before-last-go":
+          return `Départ de l'avant dernière pro à ${formatHoraire(
+            check.got
+          )} (au lieu de ${formatHoraire(check.expected)})`;
+        case "last-go":
+          return `Départ de la dernière pro à ${formatHoraire(
+            check.got
+          )} (au lieu de ${formatHoraire(check.expected)})`;
+      }
+    case CheckKind.WrongAdaptationHoraire:
+      return `Horaires d'adaptation invalides (de ${formatHoraire(
+        check.got.debut
+      )} à ${formatHoraire(check.got.fin)})`;
   }
 }
 
