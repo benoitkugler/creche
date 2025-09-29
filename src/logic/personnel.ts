@@ -53,9 +53,6 @@ export namespace Pros {
     // ... use workbook
     const sheet = workbook.worksheets[0];
     const rows = sheet.getRows(0, sheet.rowCount) || [];
-    // .eachRow((row) =>
-    //   row.eachCell((cell) => console.log(cell.value, cell.style.fill))
-    // );
 
     const out: PlanningPros = { firstMonday, semaines: [] };
     let currentWeek: PlanningProsSemaine = { week: -1, prosHoraires: [] };
@@ -139,7 +136,7 @@ function parseHorairesPros(
   const fill = firstCell.style.fill;
   let color = "FFFFFFFF";
   if (fill?.type == "pattern") {
-    color = fill.fgColor?.argb || "FFFFFFFF";
+    color = (fill.fgColor?.argb ?? fill.bgColor?.argb) || "FFFFFFFF";
   }
   color = "#" + color.slice(2);
   const pro: Pro = { prenom, color };

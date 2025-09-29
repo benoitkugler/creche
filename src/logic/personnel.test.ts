@@ -34,4 +34,7 @@ test("parse personnel", async () => {
   const pro5 = s1.prosHoraires[4];
   expect(pro5.pro.prenom).toBe("Léanne C.");
   expect(pro5.pro.color).toBe("#CC99FF");
+
+  const pro2 = s2.prosHoraires[1];
+  expect(pro2.pro.color).toBe("#B3C6E6");
 });
