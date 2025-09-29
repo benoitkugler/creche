@@ -29,7 +29,8 @@ test("parse personnel", async () => {
   expect(pro1.horaires[1].pause).toEqual(
     new Range({ heure: 13, minute: 0 }, { heure: 13, minute: 45 })
   );
-  expect(s2.prosHoraires).toHaveLength(4); // empty Pro name : ignored
+  expect(s2.prosHoraires).toHaveLength(5);
+
   const pro5 = s1.prosHoraires[4];
   expect(pro5.pro.prenom).toBe("Léanne C.");
   expect(pro5.pro.color).toBe("#CC99FF");

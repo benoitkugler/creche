@@ -516,24 +516,24 @@ test("check pro arrivals", () => {
     _checkProsArrivals(enfants2, [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0])
   ).toHaveLength(2);
 
-  // with more than 5
+  // with more than 3
   const enfants5 = [
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 1, 0),
-    ec(0, 2, 1),
-    ec(0, 2, 1),
-    ec(0, 2, 3),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
-    ec(0, 0, 0),
+    ec(0, 0, 0), // 0
+    ec(0, 0, 0), // 1
+    ec(0, 0, 0), // 2
+    ec(0, 0, 0), // 3
+    ec(0, 1, 0), // 4
+    ec(0, 2, 1), // 5
+    ec(0, 2, 1), // 6
+    ec(0, 2, 3), // 7
+    ec(0, 0, 0), // 8
+    ec(0, 0, 0), // 9
+    ec(0, 0, 0), // 10
+    ec(0, 0, 0), // 11
+    ec(0, 0, 0), // 12
+    ec(0, 0, 0), // 13
+    ec(0, 0, 0), // 14
+    ec(0, 0, 0), // 15
   ];
   expect(
     _checkProsArrivals(
@@ -571,12 +571,29 @@ test("check pro arrivals", () => {
       [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0]
     )
   ).toHaveLength(4);
-  expect(
-    _checkProsArrivals(
-      enfants5,
-      [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0]
-    )
-  ).toHaveLength(4);
+  const diags = _checkProsArrivals(
+    enfants5,
+    [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0]
+  );
+  expect(diags).toHaveLength(4);
+  // check the depart horaire is correct
+  const [first, last, second, secondLast] = diags;
+  expect(first.moment).toBe("first-arrival");
+  expect(last.moment).toBe("last-go");
+  expect(second.moment).toBe("second-arrival");
+  expect(secondLast.moment).toBe("before-last-go");
+
+  expect(first.expected).toEqual(TimeGrid.indexToHoraire(1));
+  expect(first.got).toEqual(TimeGrid.indexToHoraire(2));
+
+  expect(second.expected).toEqual(TimeGrid.indexToHoraire(4));
+  expect(second.got).toEqual(TimeGrid.indexToHoraire(5));
+
+  expect(last.expected).toEqual(TimeGrid.indexToHoraire(14));
+  expect(last.got).toEqual(TimeGrid.indexToHoraire(15));
+
+  expect(secondLast.expected).toEqual(TimeGrid.indexToHoraire(11));
+  expect(secondLast.got).toEqual(TimeGrid.indexToHoraire(12));
 });
 
 test("check adaptations horaires", () => {
@@ -657,5 +674,5 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(55);
+  expect(check(planningChildren, planningPros)).toHaveLength(47);
 });

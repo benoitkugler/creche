@@ -461,10 +461,13 @@ export function _checkProsArrivals(enfants: ChildrenCount[], pros: int[]) {
   const expectedLastPro = indexLastChild + minutesToIndex(30);
   const indexLastPro = pros.findLastIndex((p) => p != 0);
   if (expectedLastPro != indexLastPro) {
+    // the index here are the last PRESENCE, so the
+    // depart is actually the next (hence the +1 in the returned value)
+
     out.push({
       moment: "last-go",
-      expected: TimeGrid.indexToHoraire(expectedLastPro),
-      got: TimeGrid.indexToHoraire(indexLastPro),
+      expected: TimeGrid.indexToHoraire(expectedLastPro + 1),
+      got: TimeGrid.indexToHoraire(indexLastPro + 1),
     });
   }
 
@@ -492,8 +495,8 @@ export function _checkProsArrivals(enfants: ChildrenCount[], pros: int[]) {
   if (expectedBeforeLastPro != indexBeforeLastPro) {
     out.push({
       moment: "before-last-go",
-      expected: TimeGrid.indexToHoraire(expectedBeforeLastPro),
-      got: TimeGrid.indexToHoraire(indexBeforeLastPro),
+      expected: TimeGrid.indexToHoraire(expectedBeforeLastPro + 1),
+      got: TimeGrid.indexToHoraire(indexBeforeLastPro + 1),
     });
   }
 
