@@ -518,6 +518,11 @@ export function _checkPauses(
     { heure: 12, minute: 0 }
   );
 
+  // never check pauses if the pro is away
+  if (horaires.presence.isEmpty()) {
+    return [];
+  }
+
   const repas = new Range({ heure: 11, minute: 30 }, { heure: 13, minute: 0 });
   if (horaires.pause.isEmpty()) {
     // check it was not mandatory

@@ -674,5 +674,5 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(47);
+  expect(check(planningChildren, planningPros)).toHaveLength(32);
 });
