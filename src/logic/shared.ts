@@ -57,6 +57,15 @@ export class Range {
   }
 }
 
+export function parseHoraire(hour: string, minute: string): Horaire | error {
+  const h = isHeure(Number(hour));
+  const m = isMinute(Number(minute));
+  if (h == null || m == null) {
+    return newError("Valeurs d'horaire non supportées");
+  }
+  return { heure: h, minute: m };
+}
+
 // accept dd:dd dd:dd
 export function parseRange(cell: string): Range | error {
   const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
@@ -64,22 +73,12 @@ export function parseRange(cell: string): Range | error {
   if (match === null) {
     return newError(`Format de plage d'horaires invalide : ${cell}`);
   }
-  const debutHour = isHeure(Number(match[1]));
-  const debutMinute = isMinute(Number(match[2]));
-  const finHour = isHeure(Number(match[3]));
-  const finMinute = isMinute(Number(match[4]));
-  if (
-    debutHour == null ||
-    debutMinute == null ||
-    finHour == null ||
-    finMinute == null
-  ) {
-    return newError("Valeurs d'horaire non supportées");
-  }
-  return new Range(
-    { heure: debutHour, minute: debutMinute },
-    { heure: finHour, minute: finMinute }
-  );
+  const debut = parseHoraire(match[1], match[2]);
+  if (isError(debut)) return debut;
+  const fin = parseHoraire(match[3], match[4]);
+  if (isError(fin)) return fin;
+
+  return new Range(debut, fin);
 }
 
 export type Minute = 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 | 55;

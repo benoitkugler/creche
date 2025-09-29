@@ -2,7 +2,7 @@
   <v-row justify="center" no-gutters class="mt-1">
     <v-col cols="auto">
       <ProsDayHorairesHeader
-        @edit-detachements="showEditDetachements = true"
+        @edit-creneaux="showEditCreneaux = true"
       ></ProsDayHorairesHeader>
     </v-col>
     <v-col cols="auto" v-for="(_, dayIndex) in 5">
@@ -84,16 +84,17 @@
     </v-dialog>
 
     <!-- edit détachements -->
-    <v-dialog v-model="showEditDetachements" max-width="800px">
-      <ProsSemaineDetachementsEdit
-        :pros="props.planning.prosHoraires"
+    <v-dialog v-model="showEditCreneaux" max-width="800px">
+      <ProsSemaineSettingsEdit
+        :first-monday="props.firstMonday"
+        :planning="props.planning"
         @save="
           (v) => {
             emit('editDetachements', v);
-            showEditDetachements = false;
+            showEditCreneaux = false;
           }
         "
-      ></ProsSemaineDetachementsEdit>
+      ></ProsSemaineSettingsEdit>
     </v-dialog>
   </v-row>
 </template>
@@ -115,7 +116,7 @@ import {
 } from "@/logic/check";
 import { computed, ref } from "vue";
 import ProsDayHorairesEdit from "./ProsDayHorairesEdit.vue";
-import ProsSemaineDetachementsEdit from "./ProsSemaineDetachementsEdit.vue";
+import ProsSemaineSettingsEdit from "./ProsSemaineSettingsEdit.vue";
 
 const props = defineProps<{
   firstMonday: Date;
@@ -205,7 +206,7 @@ function formatCheck(check: Check): string {
 
 const dayToEdit = ref<int | null>(null);
 
-const showEditDetachements = ref(false);
+const showEditCreneaux = ref(false);
 </script>
 
 <style></style>

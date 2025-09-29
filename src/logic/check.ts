@@ -104,7 +104,7 @@ export const CheckDescription = [
   ["Pause 3", "Aucune pause entre 11h30 et 13h (à cause des repas)."],
   [
     "Réunion 1",
-    "Toutes les pro doivent être présentes le mardi de 13h30 à 14h30.",
+    "Toutes les pro doivent être présentes sur le créneau de réunion hebdomadaire.",
   ],
   ["Réunion 2", "Sur ce créneau, les enfants sont considérés comme gardés."],
 
@@ -127,7 +127,16 @@ export function check(
   const normalizedPros = _normalizePros(pros);
 
   const out: Diagnostic[] = [];
-  normalizedPros.forEach((week, weekI) => {
+
+  pros.semaines.forEach((weekRaw) => {
+    const weekI = weekRaw.week;
+    const week = normalizedPros[weekI];
+
+    let reunionRange: Range | undefined;
+    if (weekRaw.reunion) {
+      reunionRange = Pros.reunionHoraires(weekRaw.reunion.horaire);
+    }
+    weekRaw.reunion?.horaire;
     week.forEach((dayPros, dayI) => {
       const dayChildren = normalizedChildren[weekI][dayI];
       const dayIndex = { week: weekI, day: dayI };
@@ -135,7 +144,11 @@ export function check(
       // Enfants 1, Enfants 2 et Reunion 2, Adaptation 1
       for (let timeI = 0; timeI < dayChildren.length; timeI++) {
         const count = dayChildren[timeI];
-        if (horairesReunion.contains(TimeGrid.indexToHoraire(timeI))) {
+
+        if (
+          reunionRange &&
+          reunionRange.contains(TimeGrid.indexToHoraire(timeI))
+        ) {
           continue;
         }
         const pros = dayPros[timeI];
@@ -578,26 +591,23 @@ export function _checkPauses(
 
 type MissingProAtReunion = { got: int; expect: int };
 
-const horairesReunion = new Range(
-  { heure: 13, minute: 30 },
-  { heure: 14, minute: 30 }
-);
-
 export function _checkReunion(pros: PlanningPros): Diagnostic[] {
-  const reunionDayIndex = 1; // index in week, mardi
-
   const out: Diagnostic[] = [];
 
   const grid = _normalizePros(pros);
   for (const semaine of pros.semaines) {
+    if (!semaine.reunion) continue;
+
     const prosCount = semaine.prosHoraires.length; // total number of pros this week
-    const reunionDay = grid[semaine.week][reunionDayIndex]; // day of the reunion in this week
+    const reunionDay = grid[semaine.week][semaine.reunion.day]; // day of the reunion in this week
+
     // select the reunion horaire and check
-    for (const index of TimeGrid.rangeToIndexes(horairesReunion)) {
+    const reunionRange = Pros.reunionHoraires(semaine.reunion.horaire);
+    for (const index of TimeGrid.rangeToIndexes(reunionRange)) {
       const prosPresent = reunionDay[index];
       if (prosPresent < prosCount) {
         out.push({
-          dayIndex: { week: semaine.week, day: reunionDayIndex },
+          dayIndex: { week: semaine.week, day: semaine.reunion.day },
           horaireIndex: index,
           check: {
             kind: CheckKind.MissingProAtReunion,

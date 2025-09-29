@@ -2,9 +2,12 @@ import Excel from "exceljs";
 import {
   isError,
   newError,
+  parseHoraire,
   parseRange,
   Range,
   type error,
+  type Heure,
+  type Horaire,
   type int,
   type SemaineOf,
 } from "./shared";
@@ -27,9 +30,15 @@ export type SemainePro = {
   detachement?: Detachement;
 };
 
+export type Reunion = {
+  day: int;
+  horaire: Horaire; // la durée est toujours d'une heure
+};
+
 export type PlanningProsSemaine = {
   week: int; // index (0 based) par rapport au tableau des enfants
   prosHoraires: SemainePro[]; // pour chaque pro
+  reunion?: Reunion;
 };
 
 export type PlanningPros = {
@@ -52,7 +61,7 @@ export namespace Pros {
     await workbook.xlsx.load(await file.arrayBuffer());
     // ... use workbook
     const sheet = workbook.worksheets[0];
-    const rows = sheet.getRows(0, sheet.rowCount) || [];
+    const rows = sheet.getRows(0, sheet.rowCount + 1) || [];
 
     const out: PlanningPros = { firstMonday, semaines: [] };
     let currentWeek: PlanningProsSemaine = { week: -1, prosHoraires: [] };
@@ -60,6 +69,14 @@ export namespace Pros {
     for (let index = 0; index < rows.length; index++) {
       const row = collectCells(rows[index]);
       if (!row.length) continue;
+
+      // check for Reunion row
+      const reunion = isReunionRow(row);
+      if (isError(reunion)) return reunion;
+      if (reunion != null && currentWeek.week != -1) {
+        currentWeek.reunion = reunion;
+        continue;
+      }
 
       // detect a week start
       const firstCell = row[0].value;
@@ -96,6 +113,13 @@ export namespace Pros {
     }
 
     return out;
+  }
+
+  export function reunionHoraires(debut: Horaire) {
+    return new Range(debut, {
+      heure: (debut.heure + 1) as Heure,
+      minute: debut.minute,
+    });
   }
 }
 
@@ -220,4 +244,21 @@ function collectCells(row: Excel.Row) {
   const out: Excel.Cell[] = [];
   row.eachCell({ includeEmpty: true }, (v) => out.push(v));
   return out;
+}
+
+function isReunionRow(row: Excel.Cell[]): Reunion | error | null {
+  const reReunion = /R[é|e]union\s?(\d+)[h|:](\d+)/i;
+  for (let index = 0; index < row.length; index++) {
+    const cell = row[index].value;
+    if (typeof cell != "string") continue;
+
+    const match = reReunion.exec(cell);
+    if (!match) continue;
+    const horaire = parseHoraire(match[1], match[2]);
+    if (isError(horaire)) return horaire;
+
+    const day = Math.round((index - 1) / 3);
+    return { day, horaire };
+  }
+  return null;
 }

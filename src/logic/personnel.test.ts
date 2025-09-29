@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { Pros } from "./personnel";
 import { isError, Range } from "./shared";
+import { h } from "vue";
 
 test("parse personnel", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
@@ -12,8 +13,10 @@ test("parse personnel", async () => {
   expect(planning.semaines).toHaveLength(4);
   const s1 = planning.semaines[0];
   const s2 = planning.semaines[1];
+  const s3 = planning.semaines[2];
   expect(s1.week).toBe(0);
   expect(s2.week).toBe(1);
+
   expect(s1.prosHoraires).toHaveLength(5);
   const pro1 = s1.prosHoraires[0];
   expect(pro1.pro.prenom).toBe("Ilona R.");
@@ -37,4 +40,9 @@ test("parse personnel", async () => {
 
   const pro2 = s2.prosHoraires[1];
   expect(pro2.pro.color).toBe("#B3C6E6");
+
+  // reunions
+  expect(s1.reunion).toBeUndefined();
+  expect(s2.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
+  expect(s3.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
 });

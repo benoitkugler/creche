@@ -3,11 +3,11 @@
     <tbody>
       <tr>
         <td style="height: 32px">
-          <v-btn size="small" flat @click="emit('edit-detachements')">
+          <v-btn size="small" flat @click="emit('edit-creneaux')">
             <template #append>
               <v-icon>mdi-pencil</v-icon>
             </template>
-            Détachements</v-btn
+            Créneaux</v-btn
           >
         </td>
       </tr>
@@ -35,7 +35,7 @@ import { formatHoraire } from "@/logic/shared";
 const props = defineProps<{}>();
 
 const emit = defineEmits<{
-  (e: "edit-detachements"): void;
+  (e: "edit-creneaux"): void;
 }>();
 </script>
 

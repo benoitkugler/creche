@@ -318,6 +318,7 @@ test("check reunion1", () => {
       },
       {
         week: 1,
+        reunion: { day: 1, horaire: h(13, 30) },
         prosHoraires: [
           {
             pro,
@@ -431,7 +432,7 @@ test("check reunion1", () => {
   };
 
   const diag = _checkReunion(planning);
-  expect(diag).toHaveLength(2);
+  expect(diag).toHaveLength(1);
   expect(diag[0].check.kind).toBe(CheckKind.MissingProAtReunion);
   if (diag[0].check.kind != CheckKind.MissingProAtReunion) return;
   expect(diag[0].check.expect).toBe(2);
@@ -674,5 +675,5 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(32);
+  expect(check(planningChildren, planningPros)).toHaveLength(31);
 });
