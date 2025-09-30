@@ -1,26 +1,74 @@
 <template>
   <v-row justify="center" no-gutters class="mt-1">
-    <v-col cols="auto">
-      <ProsDayHorairesHeader
-        @edit-creneaux="showEditCreneaux = true"
-      ></ProsDayHorairesHeader>
-    </v-col>
-    <v-col cols="auto" v-for="(_, dayIndex) in 5">
-      <ProsDayView
-        :pros="byDay(dayIndex)"
-        :day="
-          computeDate(props.firstMonday, {
-            week: props.planning.week,
-            day: dayIndex,
-          })
-        "
-        :diagnostic-mark="
-          selectedDiagnostic?.dayIndex.day == dayIndex
-            ? selectedDiagnostic.horaireIndex
-            : null
-        "
-        @edit="dayToEdit = dayIndex"
-      ></ProsDayView>
+    <v-col>
+      <table style="border-collapse: collapse">
+        <tbody>
+          <!-- header -->
+          <tr class="text-center">
+            <td style="height: 32px">
+              <v-btn size="x-small" flat @click="showEditCreneaux = true">
+                <template #append>
+                  <v-icon>mdi-pencil</v-icon>
+                </template>
+                Créneaux</v-btn
+              >
+            </td>
+            <!-- jours -->
+            <td v-for="(_, dayIndex) in 5">
+              <v-btn
+                size="x-small"
+                flat
+                @click="dayToEdit = dayIndex"
+                class="my-auto"
+              >
+                <template #append>
+                  <v-icon>mdi-pencil</v-icon>
+                </template>
+                {{
+                  computeDate(props.firstMonday, {
+                    week: props.planning.week,
+                    day: dayIndex,
+                  }).toLocaleDateString("fr", {
+                    weekday: "short",
+                    day: "2-digit",
+                  })
+                }}
+              </v-btn>
+            </td>
+          </tr>
+
+          <!-- contenu -->
+          <tr v-for="(heure, rowIndex) in TimeGrid.heures">
+            <!-- horaires -->
+            <td
+              :style="{
+                height: '36px',
+                border: '1px solid black',
+              }"
+              class="text-center"
+            >
+              {{ formatHoraire({ heure: heure, minute: 0 }) }}
+            </td>
+
+            <!-- journée -->
+            <td
+              v-for="(_, dayIndex) in 5"
+              :rowspan="TimeGrid.heures.length"
+              v-if="rowIndex == 0"
+              style="vertical-align: top"
+            >
+              <ProsDayView
+                :pros="byDay(dayIndex)"
+                :diagnostic-mark="
+                  selectedDiagnostic?.dayIndex.day == dayIndex
+                    ? selectedDiagnostic.horaireIndex
+                    : null
+                "
+              ></ProsDayView>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </v-col>
 
     <!-- diagnostics -->
@@ -107,7 +155,6 @@ import {
 } from "@/logic/personnel";
 import ProsDayView from "./ProsDayView.vue";
 import { computeDate, formatHoraire, type int } from "@/logic/shared";
-import ProsDayHorairesHeader from "./ProsDayHorairesHeader.vue";
 import {
   CheckKind,
   TimeGrid,

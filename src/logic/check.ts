@@ -168,7 +168,7 @@ export function check(
       out.push(
         ...l.map((c) => ({
           dayIndex,
-          horaireIndex: 0,
+          horaireIndex: TimeGrid.horaireToIndex(c.got),
           check: { kind: CheckKind.WrongDepartArriveePro, ...c },
         }))
       );
@@ -223,6 +223,10 @@ export namespace TimeGrid {
   export type Index = int;
 
   export const Length = 12 * (HeureMax - HeureMin);
+
+  export const heures = Array.from({ length: HeureMax - HeureMin }).map(
+    (_, i) => (HeureMin + i) as Heure
+  );
 
   export function horaireToIndex(h: Horaire) {
     return (h.heure - HeureMin) * 12 + minutesToIndex(h.minute);
