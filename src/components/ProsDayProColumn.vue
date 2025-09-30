@@ -15,12 +15,20 @@
     </v-tooltip>
 
     <div :style="{ height: heights[2] - heights[1] + 'px' }"></div>
-    <div
-      :style="{
-        height: heights[3] - heights[2] + 'px',
-        backgroundColor: props.pro.color,
-      }"
-    ></div>
+
+    <v-tooltip>
+      <template #activator="{ props: tooltipProps }">
+        <div
+          v-bind="tooltipProps"
+          :style="{
+            height: heights[3] - heights[2] + 'px',
+            backgroundColor: props.pro.color,
+          }"
+        ></div>
+      </template>
+      {{ props.pro.prenom }}
+    </v-tooltip>
+
     <div :style="{ height: heights[4] - heights[3] + 'px' }"></div>
   </div>
 </template>
