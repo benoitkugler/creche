@@ -101,7 +101,8 @@ export const CheckDescription = [
     "Pause 2",
     "Pour strictement moins de 6h de travail, si l’arrivée est entre 11h et 12h, une pro doit avoir une pause.",
   ],
-  ["Pause 3", "Aucune pause entre 11h30 et 13h (à cause des repas)."],
+  ["Pause 3", "Pour 7h45 (ou plus) de travail, la pause est de 1h."],
+  ["Pause 4", "Aucune pause entre 11h30 et 12h30 (à cause des repas)."],
   [
     "Réunion 1",
     "Toutes les pro doivent être présentes sur le créneau de réunion hebdomadaire.",
@@ -540,7 +541,7 @@ export function _checkPauses(
     return [];
   }
 
-  const repas = new Range({ heure: 11, minute: 30 }, { heure: 13, minute: 0 });
+  const repas = new Range({ heure: 11, minute: 30 }, { heure: 12, minute: 30 });
   if (horaires.pause.isEmpty()) {
     // check it was not mandatory
     const workDuration = horaires.presence.duration();
@@ -577,19 +578,32 @@ export function _checkPauses(
     });
   }
 
-  const duration = horaires.pause.duration();
-  if (duration < 30 || duration > 60) {
+  const pauseDuration = horaires.pause.duration();
+  if (pauseDuration < 30 || pauseDuration > 60) {
     out.push({
       dayIndex,
       horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
       check: {
         kind: CheckKind.WrongPauseDuration,
         pro,
-        got: duration,
+        got: pauseDuration,
       },
     });
   }
-
+  // Pause 3
+  const travailDuration = horaires.presence.duration() - pauseDuration;
+  const oneHourThreshold = 7 * 60 + 45; // 7h45
+  if (travailDuration >= oneHourThreshold && pauseDuration < 60) {
+    out.push({
+      dayIndex,
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      check: {
+        kind: CheckKind.WrongPauseDuration,
+        pro,
+        got: pauseDuration,
+      },
+    });
+  }
   return out;
 }
 

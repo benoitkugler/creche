@@ -647,11 +647,24 @@ test("check pauses", () => {
       presence: r(h(11, 0), h(14, 0)),
       pause: r(h(12, 50), h(14, 0)),
     })
-  ).toHaveLength(2);
+  ).toHaveLength(1);
   expect(
     _checkPauses(dayIndex, pro, {
       presence: r(h(11, 0), h(14, 0)),
       pause: r(h(13, 0), h(13, 10)),
+    })
+  ).toHaveLength(1);
+  // large pause
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(8, 0), h(18, 0)),
+      pause: r(h(13, 0), h(14, 0)),
+    })
+  ).toHaveLength(0);
+  expect(
+    _checkPauses(dayIndex, pro, {
+      presence: r(h(8, 0), h(18, 0)),
+      pause: r(h(13, 0), h(13, 45)),
     })
   ).toHaveLength(1);
 });
@@ -675,5 +688,5 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(31);
+  expect(check(planningChildren, planningPros)).toHaveLength(39);
 });
