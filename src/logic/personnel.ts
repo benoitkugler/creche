@@ -15,6 +15,7 @@ import {
 export type Pro = {
   prenom: string;
   color: string; // "#HEX"
+  isInterimaire: boolean;
 };
 
 export type HoraireTravail = {
@@ -163,7 +164,7 @@ function parseHorairesPros(
     color = (fill.fgColor?.argb ?? fill.bgColor?.argb) || "FFFFFFFF";
   }
   color = "#" + color.slice(2);
-  const pro: Pro = { prenom, color };
+  const pro: Pro = { prenom, color, isInterimaire: false };
   const d1 = parseHorairesDay(
     rowPresences[1],
     rowPresences[2],

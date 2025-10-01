@@ -38,9 +38,14 @@ const enfantNonMarcheur: Enfant = {
   isMarcheur: false,
 };
 
+function pr(prenom: string) {
+  return { prenom, color: "#FFFFFF", isInterimaire: false };
+}
+
 const pro: Pro = {
   prenom: "Audrey",
   color: "#FFFFFF",
+  isInterimaire: false,
 };
 
 function h(h: Heure, m: Minute) {
@@ -206,6 +211,31 @@ test("normalize pros", () => {
               },
             ],
           },
+          {
+            pro: { prenom: "", color: "", isInterimaire: true },
+            horaires: [
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+              {
+                presence: new Range(h(6, 0), h(18, 0)),
+                pause: new Range(h(10, 30), h(11, 0)),
+              },
+            ],
+          },
         ],
       },
     ],
@@ -321,7 +351,7 @@ test("check reunion1", () => {
         reunion: { day: 1, horaire: h(13, 30) },
         prosHoraires: [
           {
-            pro,
+            pro: pr("pro1"),
             horaires: [
               {
                 presence: Range.empty(),
@@ -346,7 +376,7 @@ test("check reunion1", () => {
             ],
           },
           {
-            pro,
+            pro: pr("pro2"),
             horaires: [
               {
                 presence: Range.empty(),
@@ -435,9 +465,8 @@ test("check reunion1", () => {
   expect(diag).toHaveLength(1);
   expect(diag[0].check.kind).toBe(CheckKind.MissingProAtReunion);
   if (diag[0].check.kind != CheckKind.MissingProAtReunion) return;
-  expect(diag[0].check.expect).toBe(2);
-  expect(diag[0].check.got).toBe(1);
   expect(diag[0].dayIndex).toEqual({ week: 1, day: 1 });
+  expect(diag[0].check.missing.prenom).toBe("pro2");
   expect(diag[0].horaireIndex).toBe(TimeGrid.horaireToIndex(h(13, 30)));
 });
 
@@ -663,6 +692,27 @@ test("check pauses", () => {
   ).toHaveLength(0);
   expect(
     _checkPauses(dayIndex, pro, {
+      presence: r(h(8, 0), h(18, 0)),
+      pause: r(h(13, 0), h(13, 45)),
+    })
+  ).toHaveLength(1);
+
+  //   interim
+  const interim = { prenom: "", color: "", isInterimaire: true };
+  expect(
+    _checkPauses(dayIndex, interim, {
+      presence: r(h(10, 0), h(15, 0)),
+      pause: r(h(12, 0), h(13, 0)),
+    })
+  ).toHaveLength(0);
+  expect(
+    _checkPauses(dayIndex, interim, {
+      presence: r(h(10, 0), h(15, 0)),
+      pause: r(h(13, 0), h(14, 0)),
+    })
+  ).toHaveLength(0);
+  expect(
+    _checkPauses(dayIndex, interim, {
       presence: r(h(8, 0), h(18, 0)),
       pause: r(h(13, 0), h(13, 45)),
     })

@@ -329,6 +329,7 @@ function emptyDayPros() {
   return Array.from({ length: TimeGrid.Length }, () => 0);
 }
 
+// do not include interimaires
 export function _normalizePros(input: PlanningPros): Grid<int> {
   const out = Array.from(
     { length: Pros.semaineCount(input) },
@@ -345,6 +346,8 @@ export function _normalizePros(input: PlanningPros): Grid<int> {
   input.semaines.forEach((semaine) => {
     const iSemaine = semaine.week;
     semaine.prosHoraires.forEach((pro) => {
+      if (pro.pro.isInterimaire) return;
+
       pro.horaires.forEach((day, iDay) => {
         const currentDay = out[iSemaine][iDay];
         const [pauseStart, pauseEnd] = TimeGrid.rangeToBounds(day.pause);
@@ -541,6 +544,26 @@ export function _checkPauses(
     return [];
   }
 
+  const pauseDuration = horaires.pause.duration();
+
+  // special case (Interim)
+  if (pro.isInterimaire) {
+    if (pauseDuration != 60) {
+      return [
+        {
+          dayIndex,
+          horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+          check: {
+            kind: CheckKind.WrongPauseDuration,
+            pro,
+            got: pauseDuration,
+          },
+        },
+      ];
+    }
+    return []; // nothing else to check
+  }
+
   const repas = new Range({ heure: 11, minute: 30 }, { heure: 12, minute: 30 });
   if (horaires.pause.isEmpty()) {
     // check it was not mandatory
@@ -578,7 +601,6 @@ export function _checkPauses(
     });
   }
 
-  const pauseDuration = horaires.pause.duration();
   if (pauseDuration < 30 || pauseDuration > 60) {
     out.push({
       dayIndex,
@@ -607,35 +629,34 @@ export function _checkPauses(
   return out;
 }
 
-type MissingProAtReunion = { got: int; expect: int };
+type MissingProAtReunion = { missing: Pro };
 
 export function _checkReunion(pros: PlanningPros): Diagnostic[] {
   const out: Diagnostic[] = [];
 
-  const grid = _normalizePros(pros);
   for (const semaine of pros.semaines) {
-    if (!semaine.reunion) continue;
+    const reunion = semaine.reunion;
+    if (!reunion) continue;
 
-    const prosCount = semaine.prosHoraires.length; // total number of pros this week
-    const reunionDay = grid[semaine.week][semaine.reunion.day]; // day of the reunion in this week
-
-    // select the reunion horaire and check
-    const reunionRange = Pros.reunionHoraires(semaine.reunion.horaire);
-    for (const index of TimeGrid.rangeToIndexes(reunionRange)) {
-      const prosPresent = reunionDay[index];
-      if (prosPresent < prosCount) {
-        out.push({
-          dayIndex: { week: semaine.week, day: semaine.reunion.day },
-          horaireIndex: index,
-          check: {
-            kind: CheckKind.MissingProAtReunion,
-            expect: prosCount,
-            got: prosPresent,
-          },
-        });
-        break; // only one diagnostic per week
+    const reunionRange = Pros.reunionHoraires(reunion.horaire);
+    // check each pro is present and not in pause
+    semaine.prosHoraires.forEach((pro) => {
+      const dayReunion = pro.horaires[reunion.day];
+      if (
+        dayReunion.presence.includes(reunionRange) &&
+        !dayReunion.pause.overlaps(reunionRange)
+      ) {
+        return; // OK
       }
-    }
+      out.push({
+        dayIndex: { week: semaine.week, day: reunion.day },
+        horaireIndex: TimeGrid.horaireToIndex(reunion.horaire),
+        check: {
+          kind: CheckKind.MissingProAtReunion,
+          missing: pro.pro,
+        },
+      });
+    });
   }
 
   return out;
