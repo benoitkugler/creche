@@ -208,7 +208,7 @@ function formatCheck(check: Check): string {
     case CheckKind.MissingProForEnfants:
       return `Pro. manquante pour le nombre d'enfants (requises: ${check.expect}, présentes: ${check.got}).`;
     case CheckKind.MissingProAtReunion:
-      return `Pro. manquante sur le créneau de réunion (requises: ${check.expect}, présentes: ${check.got}).`;
+      return `Pro. manquante sur le créneau de réunion : ${check.missing.prenom}.`;
     case CheckKind.NotEnoughSleep:
       return `Temps de repos insuffisant pour ${
         check.pro.prenom
