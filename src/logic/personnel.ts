@@ -5,6 +5,7 @@ import {
   parseHoraire,
   parseRange,
   Range,
+  readExcelFile,
   type error,
   type Heure,
   type Horaire,
@@ -57,18 +58,13 @@ export namespace Pros {
     file: Blob,
     firstMonday: Date
   ): Promise<PlanningPros | error> {
-    // read from a stream
-    const workbook = new Excel.Workbook();
-    await workbook.xlsx.load(await file.arrayBuffer());
-    // ... use workbook
-    const sheet = workbook.worksheets[0];
-    const rows = sheet.getRows(0, sheet.rowCount + 1) || [];
-
+    const rows = await readExcelFile(file)
+  
     const out: PlanningPros = { firstMonday, semaines: [] };
     let currentWeek: PlanningProsSemaine = { week: -1, prosHoraires: [] };
 
     for (let index = 0; index < rows.length; index++) {
-      const row = collectCells(rows[index]);
+      const row = rows[index];
       if (!row.length) continue;
 
       // check for Reunion row
@@ -102,7 +98,7 @@ export namespace Pros {
         index += 1;
         if (index >= rows.length)
           return newError("Ligne de pauses manquantes.");
-        const res = parseHorairesPros(row, collectCells(rows[index]));
+        const res = parseHorairesPros(row, rows[index]);
         if (isError(res)) return newError(`Ligne ${index + 1} : ${res.err}`);
         currentWeek.prosHoraires.push(res);
       }
@@ -241,11 +237,6 @@ function parseRangeOrEmpty(
   return parseRange(`${cellStart} ${cellEnd}`);
 }
 
-function collectCells(row: Excel.Row) {
-  const out: Excel.Cell[] = [];
-  row.eachCell({ includeEmpty: true }, (v) => out.push(v));
-  return out;
-}
 
 function isReunionRow(row: Excel.Cell[]): Reunion | error | null {
   const reReunion = /R[é|e]union\s?(\d+)[h|:](\d+)/i;

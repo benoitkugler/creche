@@ -1,7 +1,6 @@
 import { expect, test } from "bun:test";
 import { Pros } from "./personnel";
 import { isError, Range } from "./shared";
-import { h } from "vue";
 
 test("parse personnel", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
