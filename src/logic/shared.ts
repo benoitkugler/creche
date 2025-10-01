@@ -1,3 +1,5 @@
+import Excel from "exceljs";
+
 export type int = number;
 
 export type Horaire = {
@@ -19,7 +21,7 @@ export function isBefore(h1: Horaire, h2: Horaire) {
 }
 
 export class Range {
-  constructor(public debut: Horaire, public fin: Horaire) {}
+  constructor(public debut: Horaire, public fin: Horaire) { }
 
   static empty() {
     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
@@ -144,10 +146,10 @@ export function computeDate(
   const semaineC = 7 * dayC;
   return new Date(
     firstMonday.getTime() +
-      day.week * semaineC +
-      day.day * dayC +
-      horaire.heure * heureC +
-      horaire.minute * minutesC
+    day.week * semaineC +
+    day.day * dayC +
+    horaire.heure * heureC +
+    horaire.minute * minutesC
   );
 }
 
@@ -170,4 +172,22 @@ export function fromJson<T>(v: string) {
 
 export function copy<T>(v: T) {
   return fromJson<T>(JSON.stringify(v));
+}
+
+/** read all lines */
+export async function readExcelFile(file: Blob) {
+  // read from a stream
+  const workbook = new Excel.Workbook();
+  await workbook.xlsx.load(await file.arrayBuffer());
+  // ... use workbook
+  const sheet = workbook.worksheets[0];
+  const rows = sheet.getRows(0, sheet.rowCount + 1) || [];
+
+  return rows.map(collectCells)
+}
+
+function collectCells(row: Excel.Row) {
+  const out: Excel.Cell[] = [];
+  row.eachCell({ includeEmpty: true }, (v) => out.push(v));
+  return out;
 }
