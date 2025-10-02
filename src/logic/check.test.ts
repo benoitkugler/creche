@@ -730,7 +730,7 @@ test("check sample 1", async () => {
     planningChildren.enfants[index].enfant.isMarcheur = true;
   }
 
-  const prosF = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+  const prosF = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
   const planningPros = await Pros.parseExcelPros(
     prosF,
     planningChildren.firstMonday
