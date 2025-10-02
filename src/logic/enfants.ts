@@ -161,7 +161,7 @@ export const months = [
 ];
 
 function parseMonth(s: string): { month: number; year: number } | error {
-  const reMonth = /Mois de (\w+) (\d+)/;
+  const reMonth = /Mois (?:de|d')\s?(\w+) (\d+)/;
   const res = reMonth.exec(s);
   if (res === null) return newError("Entête du document invalide.");
   const [_, monthS, yearS] = res;

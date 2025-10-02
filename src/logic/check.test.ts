@@ -720,7 +720,7 @@ test("check pauses", () => {
 });
 
 test("check sample 1", async () => {
-  const childrenF = Bun.file("src/logic/sample_enfants_redacted_1.json");
+  const childrenF = Bun.file("src/logic/sample_enfants_redacted_0.json");
   const data: TextBlock[] = await childrenF.json();
   const planningChildren = Children.parsePDFEnfants(data);
   expect(isError(planningChildren)).toBeFalse();
