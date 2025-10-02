@@ -4,7 +4,7 @@ import { isError, Range } from "./shared";
 import { h } from "vue";
 
 test("parse personnel", async () => {
-  const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+  const file = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
 
   const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 1));
   expect(isError(planning)).toBeFalse();
@@ -45,4 +45,11 @@ test("parse personnel", async () => {
   expect(s1.reunion).toBeUndefined();
   expect(s2.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
   expect(s3.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
+});
+
+test("parse personnel", async () => {
+  const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+  const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 29));
+  expect(isError(planning)).toBeFalse();
+  if (isError(planning)) return;
 });

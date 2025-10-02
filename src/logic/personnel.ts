@@ -238,7 +238,11 @@ function parseRangeOrEmpty(
   if (typeof cellStart != "string" || cellStart.length == 0) {
     return Range.empty();
   }
-  return parseRange(`${cellStart} ${cellEnd}`);
+  if (typeof cellEnd != "string" || cellEnd.length == 0) {
+    return Range.empty();
+  }
+  const range = `${cellStart} ${cellEnd}`;
+  return parseRange(range);
 }
 
 function collectCells(row: Excel.Row) {
