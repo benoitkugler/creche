@@ -6,7 +6,7 @@ import {
   _checkProsArrivals,
   _checkRepos,
   _checkReunion,
-  _normalizeChildren,
+  normalizeChildren,
   _normalizePros,
   check,
   CheckKind,
@@ -99,7 +99,7 @@ test("range overlaps", () => {
 });
 
 test("normalize enfants", () => {
-  const grid = _normalizeChildren({
+  const grid = normalizeChildren({
     firstMonday: new Date(),
     enfants: [
       {
@@ -153,7 +153,7 @@ test("normalize enfants", () => {
 test("normalize pros", () => {
   const grid = _normalizePros({
     firstMonday: new Date(),
-    semaines: [
+    weeks: [
       {
         week: 1,
         prosHoraires: [
@@ -290,7 +290,7 @@ test("check enfants count", () => {
 test("check reunion1", () => {
   const planning: PlanningPros = {
     firstMonday: new Date(2025, 8, 1),
-    semaines: [
+    weeks: [
       {
         week: 0,
         prosHoraires: [
@@ -473,7 +473,7 @@ test("check reunion1", () => {
 test("check repos", () => {
   const planning: PlanningPros = {
     firstMonday: new Date(2025, 8, 1),
-    semaines: [
+    weeks: [
       {
         week: 1,
         prosHoraires: [
@@ -608,10 +608,10 @@ test("check pro arrivals", () => {
   expect(diags).toHaveLength(4);
   // check the depart horaire is correct
   const [first, last, second, secondLast] = diags;
-  expect(first.moment).toBe("first-arrival");
-  expect(last.moment).toBe("last-go");
-  expect(second.moment).toBe("second-arrival");
-  expect(secondLast.moment).toBe("before-last-go");
+  expect(first.moment).toBe("firstArrival");
+  expect(last.moment).toBe("lastGo");
+  expect(second.moment).toBe("secondArrival");
+  expect(secondLast.moment).toBe("beforeLastGo");
 
   expect(first.expected).toEqual(TimeGrid.indexToHoraire(1));
   expect(first.got).toEqual(TimeGrid.indexToHoraire(2));

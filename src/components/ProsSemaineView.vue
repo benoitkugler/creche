@@ -227,19 +227,19 @@ function formatCheck(check: Check): string {
       )}).`;
     case CheckKind.WrongDepartArriveePro:
       switch (check.moment) {
-        case "first-arrival":
+        case "firstArrival":
           return `Arrivée de la première pro à ${formatHoraire(
             check.got
           )} (au lieu de ${formatHoraire(check.expected)})`;
-        case "second-arrival":
+        case "secondArrival":
           return `Arrivée de la deuxième pro à ${formatHoraire(
             check.got
           )} (au lieu de ${formatHoraire(check.expected)})`;
-        case "before-last-go":
+        case "beforeLastGo":
           return `Départ de l'avant dernière pro à ${formatHoraire(
             check.got
           )} (au lieu de ${formatHoraire(check.expected)})`;
-        case "last-go":
+        case "lastGo":
           return `Départ de la dernière pro à ${formatHoraire(
             check.got
           )} (au lieu de ${formatHoraire(check.expected)})`;

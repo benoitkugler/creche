@@ -3,7 +3,7 @@
     <template #append>
       <v-tabs v-model="displayedWeek">
         <v-tab
-          v-for="week in props.planningPros.semaines"
+          v-for="week in props.planningPros.weeks"
           :value="week.week"
           class="text-none"
         >
@@ -20,7 +20,7 @@
     <v-card-text>
       <v-tabs-window v-model="displayedWeek" class="mt-2">
         <v-tabs-window-item
-          v-for="planningWeek in props.planningPros.semaines"
+          v-for="planningWeek in props.planningPros.weeks"
           :value="planningWeek.week"
         >
           <ProsSemaineView

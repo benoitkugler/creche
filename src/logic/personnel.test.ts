@@ -9,10 +9,10 @@ test("parse personnel", async () => {
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
 
-  expect(planning.semaines).toHaveLength(4);
-  const s1 = planning.semaines[0];
-  const s2 = planning.semaines[1];
-  const s3 = planning.semaines[2];
+  expect(planning.weeks).toHaveLength(4);
+  const s1 = planning.weeks[0];
+  const s2 = planning.weeks[1];
+  const s3 = planning.weeks[2];
   expect(s1.week).toBe(0);
   expect(s2.week).toBe(1);
 

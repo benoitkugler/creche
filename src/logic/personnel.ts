@@ -1,5 +1,6 @@
 import Excel from "exceljs";
 import {
+  backgroundColor,
   isError,
   newError,
   parseHoraire,
@@ -24,6 +25,13 @@ export type HoraireTravail = {
   pause: Range;
 };
 
+export function emptyHoraireTravail(): HoraireTravail {
+  return {
+    presence: Range.empty(),
+    pause: Range.empty(),
+  };
+}
+
 export type Detachement = { dayIndex: int; horaires: Range };
 
 export type SemainePro = {
@@ -45,22 +53,22 @@ export type PlanningProsSemaine = {
 
 export type PlanningPros = {
   firstMonday: Date; // convenience field, copied from enfants
-  semaines: PlanningProsSemaine[];
+  weeks: PlanningProsSemaine[];
 };
 
 export namespace Pros {
   /** returns the maximum semaine + 1 */
   export function semaineCount(input: PlanningPros) {
-    return Math.max(...input.semaines.map((e) => e.week)) + 1;
+    return Math.max(...input.weeks.map((e) => e.week)) + 1;
   }
 
   export async function parseExcelPros(
     file: Blob,
     firstMonday: Date
   ): Promise<PlanningPros | error> {
-    const rows = await readExcelFile(file)
-  
-    const out: PlanningPros = { firstMonday, semaines: [] };
+    const rows = await readExcelFile(file);
+
+    const out: PlanningPros = { firstMonday, weeks: [] };
     let currentWeek: PlanningProsSemaine = { week: -1, prosHoraires: [] };
 
     for (let index = 0; index < rows.length; index++) {
@@ -89,7 +97,7 @@ export namespace Pros {
 
         // flush the current week if any
         if (currentWeek.week != -1) {
-          out.semaines.push(currentWeek);
+          out.weeks.push(currentWeek);
         }
         currentWeek = { week: semaine, prosHoraires: [] }; // start a new week
       } else if (firstCell.trim().length != 0 && currentWeek.week != -1) {
@@ -106,7 +114,7 @@ export namespace Pros {
 
     // flush the last week if any
     if (currentWeek.prosHoraires.length != 0) {
-      out.semaines.push(currentWeek);
+      out.weeks.push(currentWeek);
     }
 
     return out;
@@ -154,12 +162,7 @@ function parseHorairesPros(
 
   const firstCell = rowPresences[0];
   const prenom = (firstCell.value as string).trim();
-  const fill = firstCell.style.fill;
-  let color = "FFFFFFFF";
-  if (fill?.type == "pattern") {
-    color = (fill.fgColor?.argb ?? fill.bgColor?.argb) || "FFFFFFFF";
-  }
-  color = "#" + color.slice(2);
+  const color = backgroundColor(firstCell);
   const pro: Pro = { prenom, color, isInterimaire: false };
   const d1 = parseHorairesDay(
     rowPresences[1],
@@ -240,7 +243,6 @@ function parseRangeOrEmpty(
   const range = `${cellStart} ${cellEnd}`;
   return parseRange(range);
 }
-
 
 function isReunionRow(row: Excel.Cell[]): Reunion | error | null {
   const reReunion = /R[é|e]union\s?(\d+)[h|:](\d+)/i;

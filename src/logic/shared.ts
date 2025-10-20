@@ -21,7 +21,7 @@ export function isBefore(h1: Horaire, h2: Horaire) {
 }
 
 export class Range {
-  constructor(public debut: Horaire, public fin: Horaire) { }
+  constructor(public debut: Horaire, public fin: Horaire) {}
 
   static empty() {
     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
@@ -146,10 +146,10 @@ export function computeDate(
   const semaineC = 7 * dayC;
   return new Date(
     firstMonday.getTime() +
-    day.week * semaineC +
-    day.day * dayC +
-    horaire.heure * heureC +
-    horaire.minute * minutesC
+      day.week * semaineC +
+      day.day * dayC +
+      horaire.heure * heureC +
+      horaire.minute * minutesC
   );
 }
 
@@ -174,20 +174,41 @@ export function copy<T>(v: T) {
   return fromJson<T>(JSON.stringify(v));
 }
 
-/** read all lines */
+/** read all lines, returning a 0-based list of rows */
 export async function readExcelFile(file: Blob) {
   // read from a stream
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
   // ... use workbook
   const sheet = workbook.worksheets[0];
-  const rows = sheet.getRows(0, sheet.rowCount + 1) || [];
+  const rows = sheet.getRows(1, sheet.rowCount) || [];
 
-  return rows.map(collectCells)
+  return rows.map(collectCells);
 }
 
 function collectCells(row: Excel.Row) {
   const out: Excel.Cell[] = [];
   row.eachCell({ includeEmpty: true }, (v) => out.push(v));
   return out;
+}
+
+/** returns a #RRGGBB hex color */
+export function backgroundColor(cell: Excel.Cell) {
+  const fill = cell.style.fill;
+  let color = "FFFFFFFF";
+  if (fill?.type == "pattern") {
+    color = (fill.fgColor?.argb ?? fill.bgColor?.argb) || "FFFFFFFF";
+  }
+  return "#" + color.slice(2);
+}
+
+export function arrayEquals<T>(a: T[], b: T[]) {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length !== b.length) return false;
+
+  for (let i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }

@@ -88,7 +88,7 @@ const planningChildren = ref<PlanningChildren>({
 
 const planningPros = ref<PlanningPros>({
   firstMonday: new Date(),
-  semaines: [],
+  weeks: [],
 });
 
 const successMessage = ref<string | null>(null);
@@ -123,7 +123,7 @@ function load() {
 }
 
 function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
-  const l = planningPros.value.semaines[day.week].prosHoraires;
+  const l = planningPros.value.weeks[day.week].prosHoraires;
   if (l.length != horaires.length) return; // should not happen
   horaires.forEach((v, i) => (l[i].horaires[day.day] = v));
   successMessage.value = "Horaires modifiés avec succès.";
@@ -134,7 +134,7 @@ function editDetachementsPros(
   week: int,
   detachements: (Detachement | undefined)[]
 ) {
-  const l = planningPros.value.semaines[week].prosHoraires;
+  const l = planningPros.value.weeks[week].prosHoraires;
   if (l.length != detachements.length) return; // should not happen
   detachements.forEach((v, i) => (l[i].detachement = v));
   successMessage.value = "Détachements modifiés avec succès.";
