@@ -199,6 +199,7 @@ const kindLabels = [
   "Horaires de la pause",
   "Départ ou arrivée d'une pro.",
   "Horaires d'une adaptation",
+  "Roulement",
 ] as const;
 
 function formatCheck(check: Check): string {
@@ -248,6 +249,10 @@ function formatCheck(check: Check): string {
       return `Horaires d'adaptation invalides (de ${formatHoraire(
         check.got.debut
       )} à ${formatHoraire(check.got.fin)})`;
+    case CheckKind.WrongRoulement:
+      return `Roulement invalide : ${check.gotOrder.join(
+        " / "
+      )} au lieu de ${check.expectedOrder.join(" / ")}`;
   }
 }
 

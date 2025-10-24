@@ -48,6 +48,7 @@ export type Reunion = {
 export type PlanningProsSemaine = {
   week: int; // index (0 based) par rapport au tableau des enfants
   prosHoraires: SemainePro[]; // pour chaque pro
+  roulement: int; // index 0-based (entre 0 et 3) du roulement pour cette semaine
   reunion?: Reunion;
 };
 
@@ -69,7 +70,11 @@ export namespace Pros {
     const rows = await readExcelFile(file);
 
     const out: PlanningPros = { firstMonday, weeks: [] };
-    let currentWeek: PlanningProsSemaine = { week: -1, prosHoraires: [] };
+    let currentWeek: PlanningProsSemaine = {
+      week: -1,
+      prosHoraires: [],
+      roulement: -1,
+    };
 
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
@@ -87,11 +92,11 @@ export namespace Pros {
       const firstCell = row[0].value;
       if (typeof firstCell != "string") continue;
       if (firstCell.toLowerCase().includes("semaine")) {
-        const semaine = parseSemaine(firstCell, firstMonday);
-        if (isError(semaine)) return semaine;
+        const weekHeader = parseSemaine(firstCell, firstMonday);
+        if (isError(weekHeader)) return weekHeader;
 
         // ignore previous weeks
-        if (semaine < 0) {
+        if (weekHeader.week < 0) {
           continue;
         }
 
@@ -99,7 +104,11 @@ export namespace Pros {
         if (currentWeek.week != -1) {
           out.weeks.push(currentWeek);
         }
-        currentWeek = { week: semaine, prosHoraires: [] }; // start a new week
+        currentWeek = {
+          week: weekHeader.week,
+          roulement: weekHeader.roulement,
+          prosHoraires: [],
+        }; // start a new week
       } else if (firstCell.trim().length != 0 && currentWeek.week != -1) {
         // this is a pro !
         // fetch the next line
@@ -128,16 +137,20 @@ export namespace Pros {
   }
 }
 
-function parseSemaine(firstCell: string, firstMonday: Date): int | error {
+function parseSemaine(
+  firstCell: string,
+  firstMonday: Date
+): { week: int; roulement: int } | error {
   const reSemaine =
-    /semaine\s*\d+\s*du\s*(\d+)(?:\/\d+)?\s*au\s*(\d+)\/(\d+)\/(\d+)/i;
+    /semaine\s*(\d+)\s*du\s*(\d+)(?:\/\d+)?\s*au\s*(\d+)\/(\d+)\/(\d+)/i;
   const match = reSemaine.exec(firstCell);
   if (match === null)
     return newError("Format de la cellule 'Semaine...' invalide.");
-  const firstDay = Number(match[1]);
-  const lastDay = Number(match[2]);
-  const lastMonth = Number(match[3]) - 1;
-  const lastYear = Number(match[4]);
+  const roulement = Number(match[1]) - 1; // normalize to 0 based
+  const firstDay = Number(match[2]);
+  const lastDay = Number(match[3]);
+  const lastMonth = Number(match[4]) - 1;
+  const lastYear = Number(match[5]);
   if (lastYear >= 1000) return newError("Date invalide.");
   const last = new Date(2000 + lastYear, lastMonth, lastDay);
   if (last.getDay() != 5)
@@ -147,9 +160,11 @@ function parseSemaine(firstCell: string, firstMonday: Date): int | error {
   if (first.getDate() != firstDay) {
     return newError("Premier jour invalide.");
   }
-  const semaine =
-    (first.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24 * 7);
-  return semaine;
+  const week = Math.round(
+    (first.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24 * 7)
+  );
+
+  return { week, roulement };
 }
 
 function parseHorairesPros(

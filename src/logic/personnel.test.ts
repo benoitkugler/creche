@@ -14,7 +14,10 @@ test("parse personnel", async () => {
   const s2 = planning.weeks[1];
   const s3 = planning.weeks[2];
   expect(s1.week).toBe(0);
+  expect(s1.roulement).toBe(2);
   expect(s2.week).toBe(1);
+  expect(s2.roulement).toBe(3);
+  expect(s3.roulement).toBe(0);
 
   expect(s1.prosHoraires).toHaveLength(5);
   const pro1 = s1.prosHoraires[0];

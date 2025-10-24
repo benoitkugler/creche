@@ -1,10 +1,13 @@
 import {
+  byPosition,
   ChildrenCount,
   expectedArrivals,
   normalizeChildren,
   TimeGrid,
+  type Arr4,
+  type RoulementsN,
 } from "./check";
-import { Children, type CreneauEnfant, type PlanningChildren } from "./enfants";
+import { type PlanningChildren } from "./enfants";
 import {
   emptyHoraireTravail,
   type HoraireTravail,
@@ -23,8 +26,6 @@ import {
   type int,
   type SemaineOf,
 } from "./shared";
-
-type Arr4<T> = [T, T, T, T];
 
 /** `firstWeekRoulement` is the (0-based) index in `roulements` of the
  * first week defined in `children`
@@ -66,21 +67,10 @@ export function createPlanningPros(
       );
     }
 
-    weeks.push({ week, prosHoraires });
+    weeks.push({ week, roulement: roulementI, prosHoraires });
   }
 
   return { firstMonday: children.firstMonday, weeks: weeks };
-}
-
-// returns a shallow copy of `pros`, ordered according to
-// ouverture matin soir fermeture
-function byPosition<T>(pros: Arr4<T>, positions: Arr4<PositionR>): Arr4<T> {
-  return [
-    pros[positions.indexOf("o")],
-    pros[positions.indexOf("m")],
-    pros[positions.indexOf("s")],
-    pros[positions.indexOf("f")],
-  ];
 }
 
 // applique une logique de base en utilisant
@@ -142,9 +132,9 @@ function scaffoldDay(
 // check we follow these simplifying rules :
 //  - 4 pros, always in the same order
 //  - exactly one Position per pro per day
-function normalizeRoulements(
+export function normalizeRoulements(
   roulements: Roulements
-): { pros: Arr4<Pro>; roulements: SemaineOf<Arr4<PositionR>>[] } | error {
+): { pros: Arr4<Pro>; roulements: RoulementsN } | error {
   if (!roulements.length) return newError("Roulements manquants.");
 
   const pros = prosFromRoulement(roulements[0]);

@@ -58,12 +58,13 @@ import {
 import { computeDate, type DayIndex, type int } from "@/logic/shared";
 import { computed, ref } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";
-import { check, TimeGrid, type Diagnostic } from "@/logic/check";
+import { check, type RoulementsN } from "@/logic/check";
 import type { PlanningChildren } from "@/logic/enfants";
 
 const props = defineProps<{
   planningChildren: PlanningChildren;
   planningPros: PlanningPros;
+  roulements?: RoulementsN;
 }>();
 
 const emit = defineEmits<{
@@ -97,9 +98,10 @@ function formatSemaine(index: int) {
   })}`;
 }
 
-const diagnostics = computed(() =>
-  check(props.planningChildren, props.planningPros)
-);
+const diagnostics = computed(() => {
+  console.log(props.planningPros);
+  return check(props.planningChildren, props.planningPros, props.roulements);
+});
 
 function diagnosticFor(week: int) {
   return diagnostics.value.filter((d) => d.dayIndex.week == week);

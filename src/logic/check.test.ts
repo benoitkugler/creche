@@ -12,6 +12,7 @@ import {
   CheckKind,
   ChildrenCount,
   TimeGrid,
+  _checkRoulements,
 } from "./check";
 import { Children, type Enfant, type TextBlock } from "./enfants";
 import {
@@ -25,7 +26,12 @@ import {
   type int,
   type Minute,
 } from "./shared";
-import { Pros, type PlanningPros, type Pro } from "./personnel";
+import {
+  Pros,
+  type HoraireTravail,
+  type PlanningPros,
+  type Pro,
+} from "./personnel";
 
 const enfantMarcheur: Enfant = {
   nom: "Benoit",
@@ -156,6 +162,7 @@ test("normalize pros", () => {
     weeks: [
       {
         week: 1,
+        roulement: 0,
         prosHoraires: [
           {
             pro,
@@ -293,6 +300,7 @@ test("check reunion1", () => {
     weeks: [
       {
         week: 0,
+        roulement: 0,
         prosHoraires: [
           {
             pro,
@@ -348,6 +356,7 @@ test("check reunion1", () => {
       },
       {
         week: 1,
+        roulement: 0,
         reunion: { day: 1, horaire: h(13, 30) },
         prosHoraires: [
           {
@@ -405,6 +414,7 @@ test("check reunion1", () => {
 
       {
         week: 2,
+        roulement: 0,
         prosHoraires: [
           {
             pro,
@@ -476,6 +486,7 @@ test("check repos", () => {
     weeks: [
       {
         week: 1,
+        roulement: 0,
         prosHoraires: [
           {
             pro,
@@ -739,4 +750,163 @@ test("check sample 1", async () => {
   if (isError(planningPros)) return;
 
   expect(check(planningChildren, planningPros)).toHaveLength(39);
+});
+
+test("check sample 2", async () => {
+  const childrenF = Bun.file("src/logic/sample_enfants_redacted_1.json");
+  const data: TextBlock[] = await childrenF.json();
+  const planningChildren = Children.parsePDFEnfants(data);
+  expect(isError(planningChildren)).toBeFalse();
+  if (isError(planningChildren)) return;
+
+  for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
+    planningChildren.enfants[index].enfant.isMarcheur = true;
+  }
+
+  const prosF = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+  const planningPros = await Pros.parseExcelPros(
+    prosF,
+    planningChildren.firstMonday
+  );
+  expect(isError(planningPros)).toBeFalse();
+  if (isError(planningPros)) return;
+
+  expect(check(planningChildren, planningPros)).toHaveLength(37);
+});
+
+function hFromA(h: Heure, m: Minute): HoraireTravail {
+  return {
+    presence: new Range({ heure: h, minute: m }, { heure: 12, minute: 0 }),
+    pause: Range.empty(),
+  };
+}
+
+test("check roulements", () => {
+  const diagsOK = _checkRoulements(
+    {
+      firstMonday: new Date(),
+      weeks: [
+        {
+          week: 0,
+          roulement: 0,
+          prosHoraires: [
+            {
+              pro,
+              horaires: [
+                hFromA(6, 0),
+                hFromA(6, 0),
+                hFromA(6, 0),
+                hFromA(6, 0),
+                hFromA(6, 0),
+              ],
+            },
+            {
+              pro,
+              horaires: [
+                hFromA(8, 0),
+                hFromA(8, 0),
+                hFromA(8, 0),
+                hFromA(8, 0),
+                hFromA(8, 0),
+              ],
+            },
+            {
+              pro,
+              horaires: [
+                hFromA(8, 30),
+                hFromA(8, 30),
+                hFromA(8, 30),
+                hFromA(8, 30),
+                hFromA(8, 30),
+              ],
+            },
+            {
+              pro,
+              horaires: [
+                hFromA(12, 30),
+                hFromA(12, 30),
+                hFromA(12, 30),
+                hFromA(12, 30),
+                hFromA(12, 30),
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    [
+      [
+        ["o", "m", "s", "f"],
+        ["o", "m", "s", "f"],
+        ["o", "m", "s", "f"],
+        ["o", "m", "s", "f"],
+        ["o", "m", "s", "f"],
+      ],
+    ]
+  );
+  expect(diagsOK).toHaveLength(0);
+
+  const diagsErr = _checkRoulements(
+    {
+      firstMonday: new Date(),
+      weeks: [
+        {
+          week: 0,
+          roulement: 0,
+          prosHoraires: [
+            {
+              pro,
+              horaires: [
+                hFromA(6, 0),
+                hFromA(6, 0),
+                hFromA(6, 0),
+                hFromA(6, 0),
+                hFromA(6, 0),
+              ],
+            },
+            {
+              pro,
+              horaires: [
+                hFromA(8, 0),
+                hFromA(8, 0),
+                hFromA(8, 0),
+                hFromA(8, 0),
+                hFromA(8, 0),
+              ],
+            },
+            {
+              pro,
+              horaires: [
+                hFromA(8, 30),
+                hFromA(8, 30),
+                hFromA(8, 30),
+                hFromA(8, 30),
+                hFromA(8, 30),
+              ],
+            },
+            {
+              pro,
+              horaires: [
+                hFromA(12, 30),
+                hFromA(12, 30),
+                hFromA(12, 30),
+                hFromA(12, 30),
+                hFromA(12, 30),
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    [
+      [
+        ["m", "o", "s", "f"],
+        ["o", "m", "s", "f"],
+        ["o", "m", "s", "f"],
+        ["s", "m", "o", "f"],
+        ["o", "m", "s", "f"],
+      ],
+    ]
+  );
+  expect(diagsErr).toHaveLength(2);
 });

@@ -3,9 +3,10 @@
     <FilesLoader
       v-if="step == 'load-files'"
       @go-next="
-        (c, p) => {
+        (c, p, r) => {
           planningChildren = c;
           planningPros = p;
+          roulements = r;
           step = 'view-children';
           successMessage = 'Fichiers importés avec succès.';
           save();
@@ -23,6 +24,7 @@
       v-else-if="step == 'view-pros'"
       :planning-children="planningChildren"
       :planning-pros="planningPros"
+      :roulements="roulements"
       @edit-horaires="editHorairesPros"
       @edit-detachements="editDetachementsPros"
       @go-back="step = 'view-children'"
@@ -52,6 +54,7 @@ import type {
 import ChildrenCalendar from "./components/ChildrenCalendar.vue";
 import { fromJson, type DayIndex, type int } from "./logic/shared";
 import ProsCalendar from "./components/ProsCalendar.vue";
+import type { RoulementsN } from "./logic/check";
 
 /**
  * Go is the class as defined in the Golang `wasm_exec.js` distributable file required for WebAssembly.
@@ -91,6 +94,8 @@ const planningPros = ref<PlanningPros>({
   weeks: [],
 });
 
+const roulements = ref<RoulementsN | undefined>(undefined);
+
 const successMessage = ref<string | null>(null);
 
 async function initWasm() {
@@ -111,14 +116,20 @@ function save() {
     "planningPros",
     JSON.stringify(planningPros.value)
   );
+  if (roulements.value)
+    window.localStorage.setItem("roulements", JSON.stringify(roulements.value));
 }
 
 function load() {
   const jsonC = window.localStorage.getItem("planningChildren");
   const jsonP = window.localStorage.getItem("planningPros");
+  const jsonR = window.localStorage.getItem("roulements");
   if (jsonP == null || jsonC == null) return;
-  planningChildren.value = fromJson(jsonC) as PlanningChildren;
-  planningPros.value = fromJson(jsonP) as PlanningPros;
+  planningChildren.value = fromJson(jsonC);
+  planningPros.value = fromJson(jsonP);
+  console.log(jsonR);
+
+  if (jsonR) roulements.value = fromJson(jsonR);
   step.value = "view-children";
 }
 

@@ -15,9 +15,15 @@ export function formatHoraire(h: Horaire) {
 
 /** returns true if h1 <= h2 */
 export function isBefore(h1: Horaire, h2: Horaire) {
-  return (
-    h1.heure < h2.heure || (h1.heure == h2.heure && h1.minute <= h2.minute)
-  );
+  return compareHoraire(h1, h2) != 1;
+}
+
+export function compareHoraire(h1: Horaire, h2: Horaire) {
+  if (h1.heure < h2.heure) return -1;
+  if (h1.heure > h2.heure) return 1;
+  if (h1.minute < h2.minute) return -1;
+  if (h1.minute > h2.minute) return 1;
+  return 0;
 }
 
 export class Range {

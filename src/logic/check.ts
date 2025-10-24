@@ -5,7 +5,10 @@ import {
   type PlanningPros,
   type Pro,
 } from "./personnel";
+import type { PositionR, Roulements } from "./roulement";
 import {
+  arrayEquals,
+  compareHoraire,
   HeureMax,
   HeureMin,
   isBefore,
@@ -17,6 +20,10 @@ import {
   type Minute,
   type SemaineOf,
 } from "./shared";
+
+export type Arr4<T> = [T, T, T, T];
+
+export type RoulementsN = SemaineOf<Arr4<PositionR>>[];
 
 export type Diagnostic = {
   dayIndex: DayIndex;
@@ -34,6 +41,7 @@ export const CheckKind = {
   WrongPauseHoraire: 6,
   WrongDepartArriveePro: 7,
   WrongAdaptationHoraire: 8,
+  WrongRoulement: 9,
 } as const;
 export type CheckKind = (typeof CheckKind)[keyof typeof CheckKind];
 
@@ -64,7 +72,10 @@ export type Check =
     } & WrongDepartArriveePro)
   | ({
       kind: (typeof CheckKind)["WrongAdaptationHoraire"];
-    } & WrongAdaptationHoraire);
+    } & WrongAdaptationHoraire)
+  | ({
+      kind: (typeof CheckKind)["WrongRoulement"];
+    } & WrongRoulement);
 
 /** This user-friendly list documents the various checks implemented in this file. */
 export const CheckDescription = [
@@ -122,7 +133,8 @@ export const CheckDescription = [
  */
 export function check(
   children: PlanningChildren,
-  pros: PlanningPros
+  pros: PlanningPros,
+  roulements?: RoulementsN
 ): Diagnostic[] {
   const normalizedChildren = normalizeChildren(children);
   const normalizedPros = _normalizePros(pros);
@@ -214,6 +226,11 @@ export function check(
 
   // Repos
   out.push(..._checkRepos(pros));
+
+  // Optionnal roulement check
+  if (roulements !== undefined) {
+    out.push(..._checkRoulements(pros, roulements));
+  }
 
   return out;
 }
@@ -756,4 +773,61 @@ function _checkReposNight(
     return;
   }
   return { pro, expectedLendemain: lendemain, gotLendemain: following.debut };
+}
+
+// returns a shallow copy of `pros`, ordered according to
+// ouverture matin soir fermeture
+export function byPosition<T>(
+  pros: Arr4<T>,
+  positions: Arr4<PositionR>
+): Arr4<T> {
+  return [
+    pros[positions.indexOf("o")],
+    pros[positions.indexOf("m")],
+    pros[positions.indexOf("s")],
+    pros[positions.indexOf("f")],
+  ];
+}
+
+type WrongRoulement = {
+  expectedOrder: string[];
+  gotOrder: string[];
+};
+
+export function _checkRoulements(
+  pros: PlanningPros,
+  roulements: RoulementsN
+): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  for (const week of pros.weeks) {
+    const pros = week.prosHoraires;
+    const expectedRoulement = roulements[week.roulement];
+    for (let dayI = 0; dayI < 5; dayI++) {
+      const expectedProOrder = byPosition(
+        [0, 1, 2, 3],
+        expectedRoulement[dayI]
+      );
+      const prosHoraires = pros
+        .map((pro, index) => ({
+          arrival: pro.horaires[dayI].presence.debut,
+          pro: index,
+        }))
+        .slice(0, 4); // ordered by pro
+      prosHoraires.sort((a, b) => compareHoraire(a.arrival, b.arrival));
+      const gotProOrder = prosHoraires.map((item) => item.pro);
+      if (!arrayEquals(expectedProOrder, gotProOrder)) {
+        out.push({
+          dayIndex: { week: week.week, day: dayI },
+          horaireIndex: 0,
+          check: {
+            kind: CheckKind.WrongRoulement,
+            expectedOrder: expectedProOrder.map((i) => pros[i].pro.prenom),
+            gotOrder: gotProOrder.map((i) => pros[i].pro.prenom),
+          },
+        });
+      }
+    }
+  }
+
+  return out;
 }

@@ -23,6 +23,16 @@
           ></v-file-input>
         </v-col>
       </v-row>
+      <v-row>
+        <v-col>
+          <v-file-input
+            label="Roulement des pros (optionnel)"
+            v-model="roulementPros"
+            :multiple="false"
+            accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+          ></v-file-input>
+        </v-col>
+      </v-row>
     </v-card-text>
     <v-card-actions>
       <v-spacer></v-spacer>
@@ -52,15 +62,24 @@ import {
 } from "@/logic/enfants";
 import { isError } from "@/logic/shared";
 import { Pros, type PlanningPros } from "@/logic/personnel";
+import { Roulement } from "@/logic/roulement";
+import { normalizeRoulements } from "@/logic/create";
+import type { RoulementsN } from "@/logic/check";
 
 const props = defineProps<{}>();
 
 const emit = defineEmits<{
-  (e: "goNext", children: PlanningChildren, pros: PlanningPros): void;
+  (
+    e: "goNext",
+    children: PlanningChildren,
+    pros: PlanningPros,
+    roulements?: RoulementsN
+  ): void;
 }>();
 
 const fileChildren = ref<File | null>(null);
 const filePros = ref<File | null>(null);
+const roulementPros = ref<File | null>(null);
 
 const error = ref("");
 
@@ -82,7 +101,23 @@ async function importFiles() {
     error.value = res2.err;
     return;
   }
-  emit("goNext", res1, res2);
+
+  let roulements: RoulementsN | undefined = undefined;
+  if (roulementPros.value) {
+    const res3 = await Roulement.parseExcel(roulementPros.value);
+    if (isError(res3)) {
+      error.value = res3.err;
+      return;
+    }
+    const normalized = normalizeRoulements(res3);
+    if (isError(normalized)) {
+      error.value = normalized.err;
+      return;
+    }
+    roulements = normalized.roulements;
+  }
+
+  emit("goNext", res1, res2, roulements);
 }
 </script>
 
