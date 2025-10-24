@@ -84,6 +84,14 @@ test("date", () => {
       h(6, 0)
     ).toISOString()
   ).toBe("2025-09-09T06:00:00.000Z");
+  // weird thinks with horaire change
+  expect(
+    computeDate(
+      new Date(2025, 8, 29),
+      { week: 4, day: 4 },
+      h(6, 0)
+    ).toISOString()
+  ).toBe("2025-10-31T06:00:00.000Z");
 });
 
 test("range duration", () => {

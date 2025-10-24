@@ -146,17 +146,10 @@ export function computeDate(
   day: DayIndex,
   horaire: Horaire = { heure: 12, minute: 0 }
 ) {
-  const minutesC = 60 * 1000;
-  const heureC = 60 * minutesC;
-  const dayC = 24 * heureC;
-  const semaineC = 7 * dayC;
-  return new Date(
-    firstMonday.getTime() +
-      day.week * semaineC +
-      day.day * dayC +
-      horaire.heure * heureC +
-      horaire.minute * minutesC
-  );
+  const d = new Date(firstMonday.getTime());
+  d.setDate(d.getDate() + day.week * 7 + day.day);
+  d.setHours(horaire.heure, horaire.minute);
+  return d;
 }
 
 function reviver<T>(_: string, v: T) {
