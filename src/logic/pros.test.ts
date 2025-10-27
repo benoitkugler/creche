@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import { Pros } from "./personnel";
-import { isError, Range } from "./shared";
+import { Pros, type PlanningPros } from "./pros";
+import { formatHoraire, isBefore, isError, Range } from "./shared";
+import { format } from "path";
 
 test("parse personnel", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
@@ -54,4 +55,32 @@ test("parse personnel", async () => {
   const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 29));
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
+});
+
+test("log horaires", async () => {
+  const file0 = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
+  const planning0 = await Pros.parseExcelPros(file0, new Date(2025, 8, 1));
+  const file1 = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+  const planning1 = await Pros.parseExcelPros(file1, new Date(2025, 8, 29));
+  if (isError(planning0) || isError(planning1)) return;
+
+  const lg = (pl: PlanningPros) => {
+    pl.weeks.forEach((week) => {
+      const l: [string, string, string][] = [];
+      week.prosHoraires.forEach((pro) =>
+        pro.horaires.forEach((day) => {
+          l.push([
+            formatHoraire(day.presence.debut),
+            formatHoraire(day.pause.debut),
+            formatHoraire(day.pause.fin),
+          ]);
+        })
+      );
+      l.sort();
+      console.log(l);
+    });
+  };
+
+  lg(planning0);
+  lg(planning1);
 });

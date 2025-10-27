@@ -61,7 +61,7 @@ import {
   type TextBlock,
 } from "@/logic/enfants";
 import { isError } from "@/logic/shared";
-import { Pros, type PlanningPros } from "@/logic/personnel";
+import { Pros, type PlanningPros } from "@/logic/pros";
 import { Roulement } from "@/logic/roulement";
 import { normalizeRoulements } from "@/logic/create";
 import type { RoulementsN } from "@/logic/check";

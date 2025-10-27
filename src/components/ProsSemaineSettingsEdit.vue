@@ -98,7 +98,7 @@ import {
   type Detachement,
   type PlanningProsSemaine,
   type SemainePro,
-} from "@/logic/personnel";
+} from "@/logic/pros";
 import { computeDate, copy, Range } from "@/logic/shared";
 import { computed, ref } from "vue";
 import HoraireField from "./HoraireField.vue";

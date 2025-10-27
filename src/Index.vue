@@ -46,11 +46,7 @@ import "@/wasm_exec";
 
 import FilesLoader from "./components/FilesLoader.vue";
 import type { PlanningChildren } from "./logic/enfants";
-import type {
-  Detachement,
-  HoraireTravail,
-  PlanningPros,
-} from "./logic/personnel";
+import type { Detachement, HoraireTravail, PlanningPros } from "./logic/pros";
 import ChildrenCalendar from "./components/ChildrenCalendar.vue";
 import { fromJson, type DayIndex, type int } from "./logic/shared";
 import ProsCalendar from "./components/ProsCalendar.vue";

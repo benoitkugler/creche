@@ -26,12 +26,7 @@ import {
   type int,
   type Minute,
 } from "./shared";
-import {
-  Pros,
-  type HoraireTravail,
-  type PlanningPros,
-  type Pro,
-} from "./personnel";
+import { Pros, type HoraireTravail, type PlanningPros, type Pro } from "./pros";
 
 const enfantMarcheur: Enfant = {
   nom: "Benoit",
@@ -110,6 +105,12 @@ test("range overlaps", () => {
   expect(r(h(6, 15), h(7, 5)).overlaps(r(h(6, 0), h(6, 30)))).toBeTrue();
   expect(r(h(6, 15), h(7, 5)).overlaps(r(h(6, 0), h(6, 15)))).toBeFalse();
   expect(r(h(6, 15), h(7, 5)).overlaps(r(h(7, 5), h(7, 15)))).toBeFalse();
+});
+
+test("range from duration", () => {
+  expect(Range.fromDuration(h(6, 30), 20).fin).toEqual(h(6, 50));
+  expect(Range.fromDuration(h(6, 30), 40).fin).toEqual(h(7, 10));
+  expect(Range.fromDuration(h(6, 30), 150).fin).toEqual(h(9, 0));
 });
 
 test("normalize enfants", () => {
@@ -757,7 +758,7 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(39);
+  expect(check(planningChildren, planningPros)).toHaveLength(34);
 });
 
 test("check sample 2", async () => {
@@ -779,7 +780,7 @@ test("check sample 2", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(37);
+  expect(check(planningChildren, planningPros)).toHaveLength(32);
 });
 
 function hFromA(h: Heure, m: Minute): HoraireTravail {

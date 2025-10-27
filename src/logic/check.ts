@@ -1,11 +1,6 @@
 import { Children, type PlanningChildren } from "./enfants";
-import {
-  Pros,
-  type HoraireTravail,
-  type PlanningPros,
-  type Pro,
-} from "./personnel";
-import type { PositionR, Roulements } from "./roulement";
+import { Pros, type HoraireTravail, type PlanningPros, type Pro } from "./pros";
+import type { PositionR } from "./roulement";
 import {
   arrayEquals,
   compareHoraire,
@@ -112,7 +107,7 @@ export const CheckDescription = [
     "Pause 2",
     "Pour strictement moins de 6h de travail, si l’arrivée est entre 11h et 12h, une pro doit avoir une pause.",
   ],
-  ["Pause 3", "Pour 7h45 (ou plus) de travail, la pause est de 1h."],
+  ["Pause 3", "Pour une amplitude de 8h30 (ou plus), la pause est de 1h."],
   ["Pause 4", "Aucune pause entre 11h30 et 12h30 (à cause des repas)."],
   [
     "Réunion 1",
@@ -468,7 +463,7 @@ export function _checkAdaptationHoraires(
   return { got: childHoraires };
 }
 
-type Arrivals = {
+export type Arrivals = {
   firstArrival: TimeGrid.Index;
   secondArrival: TimeGrid.Index;
   beforeLastGo: TimeGrid.Index;
@@ -675,9 +670,9 @@ export function _checkPauses(
     });
   }
   // Pause 3
-  const travailDuration = horaires.presence.duration() - pauseDuration;
-  const oneHourThreshold = 7 * 60 + 45; // 7h45
-  if (travailDuration >= oneHourThreshold && pauseDuration < 60) {
+  const amplitude = horaires.presence.duration();
+  const oneHourThreshold = 8 * 60 + 30; // 8h30
+  if (amplitude >= oneHourThreshold && pauseDuration < 60) {
     out.push({
       dayIndex,
       horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),

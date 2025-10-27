@@ -152,7 +152,7 @@ import {
   type Detachement,
   type HoraireTravail,
   type PlanningProsSemaine,
-} from "@/logic/personnel";
+} from "@/logic/pros";
 import ProsDayView from "./ProsDayView.vue";
 import { computeDate, formatHoraire, type int } from "@/logic/shared";
 import {

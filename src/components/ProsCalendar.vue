@@ -54,7 +54,7 @@ import {
   type Detachement,
   type HoraireTravail,
   type PlanningPros,
-} from "@/logic/personnel";
+} from "@/logic/pros";
 import { computeDate, type DayIndex, type int } from "@/logic/shared";
 import { computed, ref } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";

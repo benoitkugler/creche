@@ -33,6 +33,13 @@ export class Range {
     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
   }
 
+  static fromDuration(start: Horaire, duration: int) {
+    const endInMinutes = start.heure * 60 + start.minute + duration;
+    const endMinutes = (endInMinutes % 60) as Minute;
+    const endHour = ((endInMinutes - endMinutes) / 60) as Heure;
+    return new Range(start, { heure: endHour, minute: endMinutes });
+  }
+
   isEmpty() {
     return isBefore(this.fin, this.debut);
   }

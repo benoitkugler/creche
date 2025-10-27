@@ -45,7 +45,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type HoraireTravail, type Pro } from "@/logic/personnel";
+import { type HoraireTravail, type Pro } from "@/logic/pros";
 import { copy } from "@/logic/shared";
 import { computed, ref } from "vue";
 import HoraireField from "./HoraireField.vue";

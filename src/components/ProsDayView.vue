@@ -33,7 +33,7 @@
 
 <script lang="ts" setup>
 import { TimeGrid } from "@/logic/check";
-import type { HoraireTravail, Pro } from "@/logic/personnel";
+import type { HoraireTravail, Pro } from "@/logic/pros";
 import ProsDayProColumn from "./ProsDayProColumn.vue";
 import { computed } from "vue";
 
