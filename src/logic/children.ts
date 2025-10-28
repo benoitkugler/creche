@@ -59,7 +59,7 @@ export namespace Children {
     texts: TextBlock[]
   ): PlanningChildren | error {
     // monkey patch upstream PDF error (pending a better solution)
-    texts.forEach((t) => (t.Text = t.Text.replaceAll("08:03", "08:30")));
+    texts.forEach((t) => (t.Text = t.Text.replaceAll("08:03", "08:00")));
 
     if (!texts.length) return newError("Document invalide (aucun text).");
     if (!texts[0].Text.includes("PLANNING MENSUEL"))
@@ -73,7 +73,8 @@ export namespace Children {
     const firstDay = parseDay(t.month, t.year, header[1].Text);
     // discard first column and two last which are totals
     const daysX = header.slice(1, -2).map((t) => t.X);
-    const weekCount = Math.ceil(daysX.length / 7);
+    const daysCount = daysX.length;
+    const weekCount = Math.ceil(daysCount / 7);
 
     const firstDayDay = firstDay.getDay();
     const offset = firstDayDay - 1;
@@ -92,8 +93,9 @@ export namespace Children {
         null,
         null,
       ]);
+
       // discard first column and two last which are totals
-      for (const day of childRow.slice(1, -2)) {
+      for (const day of trimAtLastHoraire(childRow.slice(1))) {
         // find the closest day
         let [bestIndex, bestDistance] = [0, 1e100];
         daysX.forEach((x, index) => {
@@ -135,15 +137,15 @@ export type TextBlock = {
   Text: string;
 };
 
-function hasHoraire(s: string) {
+// discard the end of the cells by ending at the last ":"
+function trimAtLastHoraire(cells: TextBlock[]) {
   const reHoraire = /(\d+):(\d+)/;
-  return reHoraire.test(s);
+  const end = cells.findLastIndex((t) => reHoraire.test(t.Text));
+  return cells.slice(0, end + 1);
 }
 
 function detectRows(texts: TextBlock[]) {
-  // discard the end of the lines by ending at the last ":"
-  const end = texts.findLastIndex((t) => hasHoraire(t.Text));
-  texts = texts.slice(0, end + 1);
+  texts = trimAtLastHoraire(texts);
 
   const firstX = texts.map((t) => t.X).sort((a, b) => a - b)[0];
   const firstColumn = texts.filter((t) => t.X <= firstX + 50); // cell is about 100 long

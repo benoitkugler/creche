@@ -56,4 +56,9 @@ test("parse personnel 2", async () => {
   expect(semaine[3]?.horaires).toEqual(
     new Range({ heure: 8, minute: 30 }, { heure: 18, minute: 0 })
   );
+
+  const enfantLast = res.enfants[13];
+  const semaineLast = enfantLast.creneaux[3];
+  expect(semaineLast[3]?.horaires).not.toBeUndefined();
+  expect(semaineLast[4]?.horaires).not.toBeUndefined();
 });
