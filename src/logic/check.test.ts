@@ -294,13 +294,16 @@ test("check enfants count", () => {
     CheckKind.MissingProForEnfants
   );
   expect(_checkEnfantsCount(ec(1, 0, 6), 3)).toBeUndefined();
-  expect(_checkEnfantsCount(ec(1, 0, 7), 3)?.kind).toBe(
+  expect(_checkEnfantsCount(ec(1, 0, 7), 3)).toBeUndefined();
+  expect(_checkEnfantsCount(ec(1, 0, 11), 3)?.kind).toBe(
     CheckKind.MissingProForEnfants
   );
   expect(_checkEnfantsCount(ec(1, 2, 4), 3)).toBeUndefined();
-  expect(_checkEnfantsCount(ec(1, 3, 4), 3)?.kind).toBe(
+  expect(_checkEnfantsCount(ec(0, 5, 6), 2)?.kind).toBe(
     CheckKind.MissingProForEnfants
   );
+
+  expect(_checkEnfantsCount(ec(0, 5, 5), 2)).toBeUndefined();
 });
 
 test("check reunion1", () => {
@@ -783,7 +786,7 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(32);
+  expect(check(planningChildren, planningPros)).toHaveLength(31);
 });
 
 test("check sample 2", async () => {
@@ -805,7 +808,7 @@ test("check sample 2", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(31);
+  expect(check(planningChildren, planningPros)).toHaveLength(27);
 });
 
 function hFromA(h: Heure, m: Minute): HoraireTravail {

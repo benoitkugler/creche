@@ -391,7 +391,7 @@ export function _checkEnfantsCount(
   pros: int
 ): Check | undefined {
   const marcheursParPro = 8;
-  const nonMarcheursParPro = 3;
+  const nonMarcheursParPro = 5;
 
   // adaption requires a full pro
   if (enfants.adaptionCount > pros) {
