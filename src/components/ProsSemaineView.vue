@@ -75,6 +75,27 @@
 
     <v-col>
       <v-card subtitle="Diagnostics" class="mx-2 overflow-y-auto" height="80vh">
+        <template #append>
+          <v-btn icon size="small">
+            <v-icon>mdi-help</v-icon>
+            <v-menu activator="parent">
+              <v-card
+                title="Règles"
+                subtitle="Les régles suivantes sont vérifiées."
+              >
+                <v-card-text>
+                  <v-list lines="three" density="compact">
+                    <v-list-item
+                      v-for="rule in RulesDescription"
+                      :title="rule[0]"
+                      :subtitle="rule[1]"
+                    ></v-list-item>
+                  </v-list>
+                </v-card-text>
+              </v-card>
+            </v-menu>
+          </v-btn>
+        </template>
         <v-card-text class="px-1">
           <v-list
             lines="three"
@@ -157,6 +178,7 @@ import ProsDayView from "./ProsDayView.vue";
 import { computeDate, formatHoraire, type int } from "@/logic/shared";
 import {
   CheckKind,
+  RulesDescription,
   TimeGrid,
   type Check,
   type Diagnostic,
