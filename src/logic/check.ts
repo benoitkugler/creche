@@ -803,16 +803,22 @@ export function _checkRoulements(
     const pros = week.prosHoraires;
     const expectedRoulement = roulements[week.roulement];
     for (let dayI = 0; dayI < 5; dayI++) {
+      // expected
       const expectedProOrder = byPosition(
         [0, 1, 2, 3],
         expectedRoulement[dayI]
       );
-      const prosHoraires = pros
-        .map((pro, index) => ({
-          arrival: pro.horaires[dayI].presence.debut,
-          pro: index,
-        }))
-        .slice(0, 4); // ordered by pro
+      // real
+      const pros4 = pros.slice(0, 4).map((p) => p.horaires[dayI]);
+      if (pros4.every((p) => p.presence.isEmpty())) {
+        // do not check a day with no one
+        continue;
+      }
+
+      const prosHoraires = pros4.map((pro, index) => ({
+        arrival: pro.presence.debut,
+        pro: index,
+      })); // ordered by pro
       prosHoraires.sort((a, b) => compareHoraire(a.arrival, b.arrival));
       const gotProOrder = prosHoraires.map((item) => item.pro);
       if (!arrayEquals(expectedProOrder, gotProOrder)) {
