@@ -780,7 +780,7 @@ test("check sample 2", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(33);
+  expect(check(planningChildren, planningPros)).toHaveLength(32);
 });
 
 function hFromA(h: Heure, m: Minute): HoraireTravail {

@@ -205,7 +205,8 @@ function parseChild(cell: string): Child {
   cell = cell.trim();
 
   let dateNaissance = null;
-  if (cell.length >= 10 && cell.includes("/")) {
+  const hasDate = cell.length >= 10 && cell.includes("/");
+  if (hasDate) {
     const dateString = cell.substring(cell.length - 10);
     const parts = dateString.split("/");
     dateNaissance = new Date(
@@ -216,8 +217,9 @@ function parseChild(cell: string): Child {
   }
 
   const nom = cell
-    .substring(0, cell.length - 10)
+    .substring(0, hasDate ? cell.length - 10 : undefined)
     .trim()
-    .replace("\n", " ");
+    .replace("\n", " ")
+    .replace("  ", " ");
   return { nom, dateNaissance, isMarcheur: false };
 }

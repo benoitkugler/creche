@@ -49,12 +49,13 @@ test("parse personnel 2", async () => {
   expect(enfant.creneaux).toHaveLength(4);
 
   const enfantNoDate = res.enfants[3];
+  expect(enfantNoDate.enfant.nom).toBe("DUWER DUFOREST Alan");
   expect(enfantNoDate.enfant.dateNaissance).toBeNull();
 
-  const enfant2 = res.enfants[12];
-  const semaine = enfant2.creneaux[2];
+  const enfantHoraireInvalid = res.enfants[12];
+  const semaine = enfantHoraireInvalid.creneaux[2];
   expect(semaine[3]?.horaires).toEqual(
-    new Range({ heure: 8, minute: 30 }, { heure: 18, minute: 0 })
+    new Range({ heure: 8, minute: 0 }, { heure: 18, minute: 0 })
   );
 
   const enfantLast = res.enfants[13];
