@@ -58,14 +58,18 @@ export namespace Children {
   export function parsePDFEnfants(
     texts: TextBlock[]
   ): PlanningChildren | error {
-    if (!texts.length) return newError("Document invalide.");
+    // monkey patch upstream PDF error (pending a better solution)
+    texts.forEach((t) => (t.Text = t.Text.replaceAll("08:03", "08:30")));
+
+    if (!texts.length) return newError("Document invalide (aucun text).");
     if (!texts[0].Text.includes("PLANNING MENSUEL"))
-      return newError("Document invalide.");
+      return newError("Document invalide ('PLANNING MENSUEL' manquant).");
     const t = parseMonth(texts[0].Text);
     if (isError(t)) return t;
 
     texts = texts.slice(1);
     const [header, ...rows] = detectRows(texts);
+
     const firstDay = parseDay(t.month, t.year, header[1].Text);
     // discard first column and two last which are totals
     const daysX = header.slice(1, -2).map((t) => t.X);
@@ -114,6 +118,13 @@ export namespace Children {
 
       out.enfants.push({ enfant, creneaux });
     }
+
+    // the first week may be empty if the 01 is a Saturday or Sunday:
+    // remove it and shift firstMonday
+    if (firstDayDay == 6 || firstDayDay == 7) {
+      out.firstMonday.setDate(out.firstMonday.getDate() + 7);
+      out.enfants.forEach((enfant) => enfant.creneaux.splice(0, 1));
+    }
     return out;
   }
 }
@@ -124,10 +135,18 @@ export type TextBlock = {
   Text: string;
 };
 
-// discard two last lines, unused
+function hasHoraire(s: string) {
+  const reHoraire = /(\d+):(\d+)/;
+  return reHoraire.test(s);
+}
+
 function detectRows(texts: TextBlock[]) {
+  // discard the end of the lines by ending at the last ":"
+  const end = texts.findLastIndex((t) => hasHoraire(t.Text));
+  texts = texts.slice(0, end + 1);
+
   const firstX = texts.map((t) => t.X).sort((a, b) => a - b)[0];
-  const firstColumn = texts.filter((t) => t.X <= firstX + 50); // cell in about 100 long
+  const firstColumn = texts.filter((t) => t.X <= firstX + 50); // cell is about 100 long
   firstColumn.sort((a, b) => a.Y - b.Y);
   // split the whole list according to Y value
   const rows: TextBlock[][] = [];
@@ -141,8 +160,12 @@ function detectRows(texts: TextBlock[]) {
     // remove the extracted row
     texts = texts.filter((t) => t.Y >= cell.Y - 10);
   });
-  // discard two last lines, unused
-  return rows.slice(0, -1);
+  // handle last line : the remaining of texts
+  const lastRow = texts;
+  lastRow.sort((a, b) => a.X - b.X);
+  rows.push(lastRow);
+
+  return rows;
 }
 
 export const months = [

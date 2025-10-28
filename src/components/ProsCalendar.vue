@@ -59,7 +59,7 @@ import { computeDate, type DayIndex, type int } from "@/logic/shared";
 import { computed, ref } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";
 import { check, type RoulementsN } from "@/logic/check";
-import type { PlanningChildren } from "@/logic/enfants";
+import type { PlanningChildren } from "@/logic/children";
 
 const props = defineProps<{
   planningChildren: PlanningChildren;

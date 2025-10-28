@@ -76,7 +76,7 @@ export function parseHoraire(hour: string, minute: string): Horaire | error {
   const h = isHeure(Number(hour));
   const m = isMinute(Number(minute));
   if (h == null || m == null) {
-    return newError("Valeurs d'horaire non supportées");
+    return newError(`Valeurs d'horaire non supportées ${hour}:${minute}`);
   }
   return { heure: h, minute: m };
 }

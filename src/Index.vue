@@ -45,7 +45,7 @@ import { onMounted, ref } from "vue";
 import "@/wasm_exec";
 
 import FilesLoader from "./components/FilesLoader.vue";
-import type { PlanningChildren } from "./logic/enfants";
+import type { PlanningChildren } from "./logic/children";
 import type { Detachement, HoraireTravail, PlanningPros } from "./logic/pros";
 import ChildrenCalendar from "./components/ChildrenCalendar.vue";
 import { fromJson, type DayIndex, type int } from "./logic/shared";
@@ -67,9 +67,9 @@ declare class Go {
 }
 
 declare global {
-  // go function returning TextBlock[] as JSON string
+  // go function returning TextBlock[] as JSON string or an error
   interface Window {
-    readPDFFile(slice: Uint8Array): string;
+    readPDFFile(slice: Uint8Array): { error: string } | string;
   }
 }
 
@@ -123,8 +123,6 @@ function load() {
   if (jsonP == null || jsonC == null) return;
   planningChildren.value = fromJson(jsonC);
   planningPros.value = fromJson(jsonP);
-  console.log(jsonR);
-
   if (jsonR) roulements.value = fromJson(jsonR);
   step.value = "view-children";
 }

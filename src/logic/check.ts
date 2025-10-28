@@ -1,4 +1,4 @@
-import { Children, type PlanningChildren } from "./enfants";
+import { Children, type PlanningChildren } from "./children";
 import { Pros, type HoraireTravail, type PlanningPros, type Pro } from "./pros";
 import type { PositionR } from "./roulement";
 import {

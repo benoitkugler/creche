@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { isError } from "./shared";
 import { createPlanningPros } from "./create";
-import { Children, type TextBlock } from "./enfants";
+import { Children, type TextBlock } from "./children";
 import { Roulement as Roulements } from "./roulement";
 
 async function loadInputs(childrenFile: string, roulementsFile: string) {

@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { type TextBlock, Children } from "./enfants";
+import { type TextBlock, Children } from "./children";
 import { isError, Range } from "./shared";
 
-test("parse personnel 1", async () => {
+test("parse personnel 0", async () => {
   const file = Bun.file("src/logic/sample_enfants_redacted_0.json");
   const data: TextBlock[] = await file.json();
   const res = Children.parsePDFEnfants(data);
@@ -11,7 +11,7 @@ test("parse personnel 1", async () => {
 
   expect(res.firstMonday.toISOString()).toBe("2025-09-01T00:00:00.000Z");
   expect(res.enfants).toHaveLength(12);
-  const enfant = res.enfants[1]!;
+  const enfant = res.enfants[1];
   expect(enfant.creneaux).toHaveLength(5);
   const semaine = enfant.creneaux[2]!;
   expect(semaine[2]?.horaires).toEqual(
@@ -19,7 +19,7 @@ test("parse personnel 1", async () => {
   );
 });
 
-test("parse personnel 2", async () => {
+test("parse personnel 1", async () => {
   const file = Bun.file("src/logic/sample_enfants_redacted_1.json");
   const data: TextBlock[] = await file.json();
   const res = Children.parsePDFEnfants(data);
@@ -28,10 +28,29 @@ test("parse personnel 2", async () => {
 
   expect(res.firstMonday.toISOString()).toBe("2025-09-29T00:00:00.000Z");
   expect(res.enfants).toHaveLength(13);
-  const enfant = res.enfants[1]!;
+  const enfant = res.enfants[1];
   expect(enfant.creneaux).toHaveLength(5);
   const semaine = enfant.creneaux[2]!;
   expect(semaine[0]?.horaires).toEqual(
     new Range({ heure: 10, minute: 0 }, { heure: 11, minute: 30 })
+  );
+});
+
+test("parse personnel 2", async () => {
+  const file = Bun.file("src/logic/sample_enfants_redacted_2.json");
+  const data: TextBlock[] = await file.json();
+  const res = Children.parsePDFEnfants(data);
+  expect(isError(res)).toBeFalse();
+  if (isError(res)) return;
+
+  expect(res.firstMonday.toISOString()).toBe("2025-11-03T00:00:00.000Z");
+  expect(res.enfants).toHaveLength(14);
+  const enfant = res.enfants[0];
+  expect(enfant.creneaux).toHaveLength(4);
+
+  const enfant2 = res.enfants[12];
+  const semaine = enfant2.creneaux[2];
+  expect(semaine[3]?.horaires).toEqual(
+    new Range({ heure: 8, minute: 30 }, { heure: 18, minute: 0 })
   );
 });

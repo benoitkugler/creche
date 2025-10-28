@@ -8,7 +8,7 @@ import {
   type Arrivals,
   type RoulementsN,
 } from "./check";
-import { type PlanningChildren } from "./enfants";
+import { type PlanningChildren } from "./children";
 import {
   emptyHoraireTravail,
   type HoraireTravail,

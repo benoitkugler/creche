@@ -14,7 +14,7 @@ import {
   TimeGrid,
   _checkRoulements,
 } from "./check";
-import { Children, type Enfant, type TextBlock } from "./enfants";
+import { Children, type Enfant, type TextBlock } from "./children";
 import {
   computeDate,
   HeureMax,
@@ -780,7 +780,7 @@ test("check sample 2", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(32);
+  expect(check(planningChildren, planningPros)).toHaveLength(33);
 });
 
 function hFromA(h: Heure, m: Minute): HoraireTravail {

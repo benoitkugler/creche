@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"strings"
 
 	"github.com/benoitkugler/pdf/contentstream"
 	"github.com/benoitkugler/pdf/fonts/simpleencodings"
@@ -46,7 +48,27 @@ func extractTextsInPDF(r io.ReadSeeker) ([]TextBlock, error) {
 		case contentstream.OpBeginText:
 			currentText = TextBlock{}
 		case contentstream.OpEndText:
-			texts = append(texts, currentText)
+			if currentText.Text != "" {
+				if len(texts) != 0 {
+					// when two lines share the same X, merge it
+					last := &texts[len(texts)-1]
+					if math.Abs(float64(last.X-currentText.X)) < 1 {
+						last.Text += "\n" + currentText.Text
+						continue
+					}
+					// merge the days header (l 04)
+					if len(last.Text) == 1 && strings.Contains("lmjvsd", last.Text) {
+						last.Text += " " + currentText.Text
+						continue
+					}
+					// merge all the texts before "ENFANT"
+					if len(texts) == 1 && currentText.Text != "ENFANT" {
+						last.Text += currentText.Text
+						continue
+					}
+				}
+				texts = append(texts, currentText)
+			}
 		case contentstream.OpSetTextMatrix:
 			currentText.X, currentText.Y = op.Matrix[5], op.Matrix[4] // the pdf has inverted dimension
 		case contentstream.OpSetFont:
@@ -55,7 +77,6 @@ func extractTextsInPDF(r io.ReadSeeker) ([]TextBlock, error) {
 			simple, ok := font.Subtype.(model.FontSimple)
 			if !ok {
 				return nil, errors.New("composite font not supported")
-
 			}
 			if enc := simple.SimpleEncoding(); enc != model.WinAnsiEncoding {
 				return nil, fmt.Errorf("unsupport encoding %s", enc)
@@ -72,14 +93,23 @@ func extractTextsInPDF(r io.ReadSeeker) ([]TextBlock, error) {
 			}
 			currentText.Text += string(runes)
 		case contentstream.OpTextMove:
-			// simplify by adding a space
-			currentText.Text += " "
+			if currentText.X == 0 && currentText.Y == 0 {
+				currentText.X, currentText.Y = op.X, -op.Y
+			} else if op.Y != 0 {
+				// simplify by adding a space
+				currentText.Text += " "
+			}
 		case contentstream.OpTextNextLine:
 			currentText.Text += "\n"
-		case contentstream.OpShowSpaceGlyph, contentstream.OpMoveShowText, contentstream.OpMoveSetShowText:
+		case contentstream.OpMoveShowText:
+			// interaction with OpTextMove is hard to handle
+			currentText.Text += op.Text
+		case contentstream.OpMoveSetShowText:
+			currentText.Text += op.Text
+		case contentstream.OpShowSpaceGlyph:
 			return nil, errors.New("unhandled text operator")
-			// default:
-			// 	fmt.Printf("%v %T\n", op, op)
+		default:
+			// fmt.Printf("%v %T\n", op, op)
 		}
 	}
 

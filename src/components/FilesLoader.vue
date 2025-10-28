@@ -59,7 +59,7 @@ import {
   Children,
   type PlanningChildren,
   type TextBlock,
-} from "@/logic/enfants";
+} from "@/logic/children";
 import { isError } from "@/logic/shared";
 import { Pros, type PlanningPros } from "@/logic/pros";
 import { Roulement } from "@/logic/roulement";
@@ -88,7 +88,13 @@ async function importFiles() {
   // Enfants
   const content = await fileChildren.value.arrayBuffer();
   const slice = new Uint8Array(content);
-  const textsContents: TextBlock[] = JSON.parse(window.readPDFFile(slice));
+  const pdfContent = window.readPDFFile(slice);
+  if (typeof pdfContent == "object") {
+    error.value = pdfContent.error;
+    return;
+  }
+
+  const textsContents: TextBlock[] = JSON.parse(pdfContent);
   const res1 = Children.parsePDFEnfants(textsContents);
   if (isError(res1)) {
     error.value = res1.err;

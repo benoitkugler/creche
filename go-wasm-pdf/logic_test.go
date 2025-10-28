@@ -13,18 +13,19 @@ func TestReadPDF(t *testing.T) {
 	for i, file := range []string{
 		"Planning Mensuel 0925.pdf",
 		"Planning Mensuel 1025.pdf",
+		"Planning Mensuel 1125.pdf",
 	} {
 		b, err := os.ReadFile(file)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal(file, err)
 		}
 		texts, err := extractTextsInPDF(bytes.NewReader(b))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal(file, err)
 		}
 		// redact children
 		for j, text := range texts {
-			if strings.Count(text.Text, "/") >= 2 && j != 0 {
+			if strings.Count(text.Text, "/") >= 2 && j != 0 && len(text.Text) >= 12 {
 				// we have a birthday
 				texts[j].Text = "XXXXXXX Aaaaaaaa" + text.Text[len(text.Text)-11:len(text.Text)]
 			}

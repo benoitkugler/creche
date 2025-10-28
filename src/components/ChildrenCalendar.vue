@@ -84,7 +84,7 @@ import {
   Children,
   type PlanningChildren,
   months,
-} from "@/logic/enfants";
+} from "@/logic/children";
 import {
   computeDate,
   copy,

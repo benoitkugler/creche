@@ -1,6 +1,7 @@
 //go:build wasm
 
 // GOOS=js GOARCH=wasm go build -o main.wasm
+// mv main.wasm ../public/
 package main
 
 import (
@@ -27,7 +28,7 @@ func readPDFFile(this js.Value, input []js.Value) any {
 
 	texts, err := extractTextsInPDF(bytes.NewReader(inSlice))
 	if err != nil {
-		return err
+		return map[string]any{"error": err.Error()}
 	}
 
 	b, _ := json.Marshal(texts)
