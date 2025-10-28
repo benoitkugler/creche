@@ -1,8 +1,8 @@
 import {
-  backgroundColor,
   isError,
   newError,
   readExcelFile,
+  type Cell,
   type error,
   type SemaineOf,
 } from "./shared";
@@ -71,7 +71,7 @@ export namespace Roulement {
     return out;
   }
 
-  function parseRoulementRow(row: Excel.Cell[]): ProRoulement | error {
+  function parseRoulementRow(row: Cell[]): ProRoulement | error {
     if (row.length < 7) {
       return newError("Ficher de roulement invalide (ligne trop courte)");
     }
@@ -79,7 +79,6 @@ export namespace Roulement {
       return newError("Ficher de roulement invalide (type invalide)");
     }
     const prenom = row[0].value;
-    const color = backgroundColor(row[0]);
 
     const p1 = parsePosition(row[2].value);
     if (isError(p1)) return p1;
@@ -92,6 +91,10 @@ export namespace Roulement {
     const p5 = parsePosition(row[6].value);
     if (isError(p5)) return p5;
 
-    return { prenom, color, positions: [p1, p2, p3, p4, p5] as const };
+    return {
+      prenom,
+      color: row[0].color,
+      positions: [p1, p2, p3, p4, p5] as const,
+    };
   }
 }

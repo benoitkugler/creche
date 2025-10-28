@@ -99,7 +99,6 @@ function formatSemaine(index: int) {
 }
 
 const diagnostics = computed(() => {
-  console.log(props.planningPros);
   return check(props.planningChildren, props.planningPros, props.roulements);
 });
 

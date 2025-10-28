@@ -1,12 +1,12 @@
-import Excel from "exceljs";
 import {
-  backgroundColor,
   isError,
   newError,
   parseHoraire,
   parseRange,
   Range,
   readExcelFile,
+  type Cell,
+  type CellValue,
   type error,
   type Heure,
   type Horaire,
@@ -170,8 +170,8 @@ function parseSemaine(
 }
 
 function parseHorairesPros(
-  rowPresences: Excel.Cell[],
-  rowPauses: Excel.Cell[]
+  rowPresences: Cell[],
+  rowPauses: Cell[]
 ): SemainePro | error {
   if (rowPresences.length < 15 || rowPauses.length < 15) {
     return newError("Ligne trop courte.");
@@ -179,8 +179,7 @@ function parseHorairesPros(
 
   const firstCell = rowPresences[0];
   const prenom = (firstCell.value as string).trim();
-  const color = backgroundColor(firstCell);
-  const pro: Pro = { prenom, color, isInterimaire: false };
+  const pro: Pro = { prenom, color: firstCell.color, isInterimaire: false };
   const d1 = parseHorairesDay(
     rowPresences[1],
     rowPresences[2],
@@ -224,10 +223,10 @@ function parseHorairesPros(
 }
 
 function parseHorairesDay(
-  presenceStart: Excel.Cell,
-  presenceEnd: Excel.Cell,
-  pauseStart: Excel.Cell,
-  pauseEnd: Excel.Cell
+  presenceStart: Cell,
+  presenceEnd: Cell,
+  pauseStart: Cell,
+  pauseEnd: Cell
 ): HoraireTravail | error {
   const presenceI = parseRangeOrEmpty(presenceStart.value, presenceEnd.value);
   if (isError(presenceI)) return presenceI;
@@ -242,8 +241,8 @@ function parseHorairesDay(
 }
 
 function parseRangeOrEmpty(
-  cellStart: Excel.CellValue,
-  cellEnd: Excel.CellValue
+  cellStart: CellValue,
+  cellEnd: CellValue
 ): Range | error {
   if (cellStart instanceof Date) {
     cellStart = cellStart.toISOString().slice(11, 16);
@@ -261,7 +260,7 @@ function parseRangeOrEmpty(
   return parseRange(range);
 }
 
-function isReunionRow(row: Excel.Cell[]): Reunion | error | null {
+function isReunionRow(row: Cell[]): Reunion | error | null {
   const reReunion = /R[é|e]union\s?(\d+)[h|:](\d+)/i;
   for (let index = 0; index < row.length; index++) {
     const cell = row[index].value;

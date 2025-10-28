@@ -29,7 +29,7 @@
             label="Roulement des pros (optionnel)"
             v-model="roulementPros"
             :multiple="false"
-            accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           ></v-file-input>
         </v-col>
       </v-row>

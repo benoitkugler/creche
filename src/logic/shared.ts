@@ -180,8 +180,11 @@ export function copy<T>(v: T) {
   return fromJson<T>(JSON.stringify(v));
 }
 
+export type CellValue = Date | string | null;
+export type Cell = { value: CellValue; color: string };
+
 /** read all lines, returning a 0-based list of rows */
-export async function readExcelFile(file: Blob) {
+export async function readExcelFile(file: Blob): Promise<Cell[][]> {
   // read from a stream
   const workbook = new Excel.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
@@ -193,13 +196,15 @@ export async function readExcelFile(file: Blob) {
 }
 
 function collectCells(row: Excel.Row) {
-  const out: Excel.Cell[] = [];
-  row.eachCell({ includeEmpty: true }, (v) => out.push(v));
+  const out: Cell[] = [];
+  row.eachCell({ includeEmpty: true }, (v) =>
+    out.push({ value: v.value as CellValue, color: backgroundColor(v) })
+  );
   return out;
 }
 
 /** returns a #RRGGBB hex color */
-export function backgroundColor(cell: Excel.Cell) {
+function backgroundColor(cell: Excel.Cell) {
   const fill = cell.style.fill;
   let color = "FFFFFFFF";
   if (fill?.type == "pattern") {
