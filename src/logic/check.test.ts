@@ -677,7 +677,7 @@ test("check pro arrivals", () => {
 test("check adaptations horaires", () => {
   expect(_checkAdaptationHoraires(r(h(6, 0), h(7, 0)))).not.toBeUndefined();
   expect(_checkAdaptationHoraires(r(h(10, 0), h(10, 30)))).toBeUndefined();
-  expect(_checkAdaptationHoraires(r(h(9, 45), h(11, 45)))).not.toBeUndefined();
+  expect(_checkAdaptationHoraires(r(h(15, 45), h(17, 45)))).not.toBeUndefined();
 });
 
 test("check pauses", () => {

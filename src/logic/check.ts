@@ -95,10 +95,7 @@ export const RulesDescription = [
     "L’avant-dernière pro doit partir 15 min après le 4° enfant restant, la dernière pro 30 min après le dernier enfant. ",
   ],
   ["Adaptation 1", "Une adaptation occupe une pro à part entière."],
-  [
-    "Adaptation 2",
-    "Une adaptation doit se produire dans les créneaux suivants : 9h30 à 11h30, 10h à 12h30, 13h à 15h30 ou 14h30 à 16h45",
-  ],
+  ["Adaptation 2", "Une adaptation doit se produire entre 9h et 17h."],
   [
     "Pause 1",
     "Chaque pro doit avoir entre 30 min et 1h de pause, à partir de 6h de travail.",
@@ -449,17 +446,10 @@ type WrongAdaptationHoraire = {
 export function _checkAdaptationHoraires(
   childHoraires: Range
 ): WrongAdaptationHoraire | undefined {
-  const accepted = [
-    new Range({ heure: 9, minute: 30 }, { heure: 11, minute: 30 }),
-    new Range({ heure: 10, minute: 0 }, { heure: 12, minute: 30 }),
-    new Range({ heure: 13, minute: 0 }, { heure: 15, minute: 30 }),
-    new Range({ heure: 14, minute: 30 }, { heure: 16, minute: 45 }),
-  ] as const;
-  for (const ok of accepted) {
-    if (ok.includes(childHoraires)) {
-      // all good
-      return;
-    }
+  const accepted = new Range({ heure: 9, minute: 0 }, { heure: 17, minute: 0 });
+  if (accepted.includes(childHoraires)) {
+    // all good
+    return;
   }
   return { got: childHoraires };
 }
