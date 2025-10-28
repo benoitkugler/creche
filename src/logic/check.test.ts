@@ -418,6 +418,31 @@ test("check reunion1", () => {
               },
             ],
           },
+          {
+            pro: pr("pro3"),
+            horaires: [
+              {
+                presence: Range.empty(),
+                pause: Range.empty(),
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty(),
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty(),
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty(),
+              },
+              {
+                presence: Range.empty(),
+                pause: Range.empty(),
+              },
+            ],
+          },
         ],
       },
 
@@ -758,7 +783,7 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(34);
+  expect(check(planningChildren, planningPros)).toHaveLength(32);
 });
 
 test("check sample 2", async () => {
@@ -780,7 +805,7 @@ test("check sample 2", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(32);
+  expect(check(planningChildren, planningPros)).toHaveLength(31);
 });
 
 function hFromA(h: Heure, m: Minute): HoraireTravail {

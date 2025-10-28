@@ -73,7 +73,7 @@ export type Check =
     } & WrongRoulement);
 
 /** This user-friendly list documents the various checks implemented in this file. */
-export const CheckDescription = [
+export const RulesDescription = [
   [
     "Enfants 1",
     "Une pro seule doit avoir au maximum 3 enfants (marcheurs ou non).",
@@ -111,7 +111,7 @@ export const CheckDescription = [
   ["Pause 4", "Aucune pause entre 11h30 et 12h30 (à cause des repas)."],
   [
     "Réunion 1",
-    "Toutes les pro doivent être présentes sur le créneau de réunion hebdomadaire.",
+    "Toutes les pro (sauf congé) doivent être présentes sur le créneau de réunion hebdomadaire.",
   ],
   ["Réunion 2", "Sur ce créneau, les enfants sont considérés comme gardés."],
 
@@ -157,6 +157,7 @@ export function check(
           reunionRange &&
           reunionRange.contains(TimeGrid.indexToHoraire(timeI))
         ) {
+          // Reunion 2 : no need to check anything
           continue;
         }
         const pros = dayPros[timeI];
@@ -698,10 +699,14 @@ export function _checkReunion(pros: PlanningPros): Diagnostic[] {
     const reunionRange = Pros.reunionHoraires(reunion.horaire);
     // check each pro is present and not in pause
     semaine.prosHoraires.forEach((pro) => {
-      const dayReunion = pro.horaires[reunion.day];
+      const proAtDayReunion = pro.horaires[reunion.day];
+      // vacations : OK
+      if (proAtDayReunion.presence.isEmpty()) {
+        return;
+      }
       if (
-        dayReunion.presence.includes(reunionRange) &&
-        !dayReunion.pause.overlaps(reunionRange)
+        proAtDayReunion.presence.includes(reunionRange) &&
+        !proAtDayReunion.pause.overlaps(reunionRange)
       ) {
         return; // OK
       }
