@@ -18,7 +18,12 @@
       @go-back="step = 'load-files'"
       @go-next="step = 'view-pros'"
       :planning="planningChildren"
-      @update="(p) => (planningChildren = p)"
+      @update="
+        (p) => {
+          planningChildren = p;
+          save();
+        }
+      "
     ></ChildrenCalendar>
     <ProsCalendar
       v-else-if="step == 'view-pros'"
