@@ -118,6 +118,8 @@ export namespace Pros {
         const res = parseHorairesPros(row, rows[index]);
         if (isError(res)) return newError(`Ligne ${index + 1} : ${res.err}`);
         currentWeek.prosHoraires.push(res);
+        // always skip next line to avoid errors
+        index += 1;
       }
     }
 

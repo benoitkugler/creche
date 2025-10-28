@@ -1,9 +1,8 @@
 import { expect, test } from "bun:test";
 import { Pros, type PlanningPros } from "./pros";
-import { formatHoraire, isBefore, isError, Range } from "./shared";
-import { format } from "path";
+import { formatHoraire, isError, Range } from "./shared";
 
-test("parse personnel", async () => {
+test("parse personnel 0", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
 
   const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 1));
@@ -50,37 +49,45 @@ test("parse personnel", async () => {
   expect(s3.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
 });
 
-test("parse personnel", async () => {
+test("parse personnel 1", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
   const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 29));
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
 });
 
-test("log horaires", async () => {
-  const file0 = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
-  const planning0 = await Pros.parseExcelPros(file0, new Date(2025, 8, 1));
-  const file1 = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
-  const planning1 = await Pros.parseExcelPros(file1, new Date(2025, 8, 29));
-  if (isError(planning0) || isError(planning1)) return;
-
-  const lg = (pl: PlanningPros) => {
-    pl.weeks.forEach((week) => {
-      const l: [string, string, string][] = [];
-      week.prosHoraires.forEach((pro) =>
-        pro.horaires.forEach((day) => {
-          l.push([
-            formatHoraire(day.presence.debut),
-            formatHoraire(day.pause.debut),
-            formatHoraire(day.pause.fin),
-          ]);
-        })
-      );
-      l.sort();
-      console.log(l);
-    });
-  };
-
-  lg(planning0);
-  lg(planning1);
+test("parse personnel 2", async () => {
+  const file = Bun.file("src/logic/sample_personnel_redacted_2.xlsx");
+  const planning = await Pros.parseExcelPros(file, new Date(2025, 10, 3));
+  expect(isError(planning)).toBeFalse();
+  if (isError(planning)) return;
+  expect(planning.weeks).toHaveLength(2);
 });
+
+// test("log horaires", async () => {
+//   const file0 = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
+//   const planning0 = await Pros.parseExcelPros(file0, new Date(2025, 8, 1));
+//   const file1 = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
+//   const planning1 = await Pros.parseExcelPros(file1, new Date(2025, 8, 29));
+//   if (isError(planning0) || isError(planning1)) return;
+
+//   const lg = (pl: PlanningPros) => {
+//     pl.weeks.forEach((week) => {
+//       const l: [string, string, string][] = [];
+//       week.prosHoraires.forEach((pro) =>
+//         pro.horaires.forEach((day) => {
+//           l.push([
+//             formatHoraire(day.presence.debut),
+//             formatHoraire(day.pause.debut),
+//             formatHoraire(day.pause.fin),
+//           ]);
+//         })
+//       );
+//       l.sort();
+//       console.log(l);
+//     });
+//   };
+
+//   lg(planning0);
+//   lg(planning1);
+// });
