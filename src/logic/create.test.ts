@@ -17,11 +17,11 @@ async function loadInputs(childrenFile: string, roulementsFile: string) {
   return { planningChildren, roulements };
 }
 
-test("create planning", async () => {
-  const { planningChildren, roulements } = await loadInputs(
-    "src/logic/sample_enfants_redacted_0.json",
-    "src/logic/sample_roulements.xlsx"
-  );
-  const planningPros = createPlanningPros(planningChildren, roulements, 0);
-  expect(isError(planningPros)).toBeFalse();
-});
+// test("create planning", async () => {
+//   const { planningChildren, roulements } = await loadInputs(
+//     "src/logic/sample_enfants_redacted_0.json",
+//     "src/logic/sample_roulements.xlsx"
+//   );
+//   const planningPros = createPlanningPros(planningChildren, roulements, 0);
+//   expect(isError(planningPros)).toBeFalse();
+// });

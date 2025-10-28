@@ -14,7 +14,7 @@ import {
   TimeGrid,
   _checkRoulements,
 } from "./check";
-import { Children, type Enfant, type TextBlock } from "./children";
+import { Children, type Child, type TextBlock } from "./children";
 import {
   computeDate,
   HeureMax,
@@ -28,12 +28,12 @@ import {
 } from "./shared";
 import { Pros, type HoraireTravail, type PlanningPros, type Pro } from "./pros";
 
-const enfantMarcheur: Enfant = {
+const enfantMarcheur: Child = {
   nom: "Benoit",
   dateNaissance: new Date(),
   isMarcheur: true,
 };
-const enfantNonMarcheur: Enfant = {
+const enfantNonMarcheur: Child = {
   nom: "Benoit",
   dateNaissance: new Date(),
   isMarcheur: false,

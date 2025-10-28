@@ -9,9 +9,9 @@ import {
   type SemaineOf,
 } from "./shared";
 
-export type Enfant = {
+export type Child = {
   nom: string;
-  dateNaissance: Date;
+  dateNaissance: Date | null;
   isMarcheur: boolean;
 };
 
@@ -21,7 +21,7 @@ type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
 
 export type PlanningChildren = {
   firstMonday: Date; // lien avec le calendrier réel
-  enfants: { enfant: Enfant; creneaux: CreneauxEnfant }[];
+  enfants: { enfant: Child; creneaux: CreneauxEnfant }[];
 };
 
 export namespace Children {
@@ -199,16 +199,19 @@ function parseDay(month: number, year: number, s: string): Date {
   return new Date(year, month, day);
 }
 
-function parseChild(cell: string): Enfant {
+function parseChild(cell: string): Child {
   cell = cell.trim();
 
-  const dateString = cell.substring(cell.length - 10);
-  const parts = dateString.split("/");
-  const dateNaissance = new Date(
-    parseInt(parts[2]),
-    parseInt(parts[1]) - 1,
-    parseInt(parts[0])
-  );
+  let dateNaissance = null;
+  if (cell.length >= 10 && cell.includes("/")) {
+    const dateString = cell.substring(cell.length - 10);
+    const parts = dateString.split("/");
+    dateNaissance = new Date(
+      parseInt(parts[2]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[0])
+    );
+  }
 
   const nom = cell
     .substring(0, cell.length - 10)

@@ -48,6 +48,9 @@ test("parse personnel 2", async () => {
   const enfant = res.enfants[0];
   expect(enfant.creneaux).toHaveLength(4);
 
+  const enfantNoDate = res.enfants[3];
+  expect(enfantNoDate.enfant.dateNaissance).toBeNull();
+
   const enfant2 = res.enfants[12];
   const semaine = enfant2.creneaux[2];
   expect(semaine[3]?.horaires).toEqual(

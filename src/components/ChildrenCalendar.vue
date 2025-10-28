@@ -19,7 +19,7 @@
           <tr v-for="enfant in inner.enfants">
             <td>
               {{ enfant.enfant.nom }} <br />
-              {{ enfant.enfant.dateNaissance.toLocaleDateString() }}
+              {{ enfant.enfant.dateNaissance?.toLocaleDateString() || "" }}
             </td>
             <td class="text-center">
               <v-checkbox-btn
