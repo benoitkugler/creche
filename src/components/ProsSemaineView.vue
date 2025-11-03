@@ -177,10 +177,9 @@ import {
 import ProsDayView from "./ProsDayView.vue";
 import { computeDate, formatHoraire, type int } from "@/logic/shared";
 import {
-  CheckKind,
+  formatCheck,
   RulesDescription,
   TimeGrid,
-  type Check,
   type Diagnostic,
 } from "@/logic/check";
 import { computed, ref } from "vue";
@@ -223,60 +222,6 @@ const kindLabels = [
   "Horaires d'une adaptation",
   "Roulement",
 ] as const;
-
-function formatCheck(check: Check): string {
-  switch (check.kind) {
-    case CheckKind.MissingProAdaption:
-      return `Pro. manquante pour les adaptations (requises: ${check.expect}, présentes: ${check.got}).`;
-    case CheckKind.MissingProForEnfants:
-      return `Pro. manquante pour le nombre d'enfants (requises: ${check.expect}, présentes: ${check.got}).`;
-    case CheckKind.MissingProAtReunion:
-      return `Pro. manquante sur le créneau de réunion : ${check.missing.prenom}.`;
-    case CheckKind.NotEnoughSleep:
-      return `Temps de repos insuffisant pour ${
-        check.pro.prenom
-      } : reprise le lendemain à ${formatHoraire(
-        check.gotLendemain
-      )} au lieu de ${formatHoraire(check.expectedLendemain)}`;
-    case CheckKind.MissingPause:
-      return `Pause manquante pour ${check.pro.prenom}`;
-    case CheckKind.WrongPauseDuration:
-      return `Durée de la pause invalide pour ${check.pro.prenom} (${check.got} minutes).`;
-    case CheckKind.WrongPauseHoraire:
-      return `Horaires de la pause invalides pour ${
-        check.pro.prenom
-      } (de ${formatHoraire(check.got.debut)} à ${formatHoraire(
-        check.got.fin
-      )}).`;
-    case CheckKind.WrongDepartArriveePro:
-      switch (check.moment) {
-        case "firstArrival":
-          return `Arrivée de la première pro à ${formatHoraire(
-            check.got
-          )} (au lieu de ${formatHoraire(check.expected)})`;
-        case "secondArrival":
-          return `Arrivée de la deuxième pro à ${formatHoraire(
-            check.got
-          )} (au lieu de ${formatHoraire(check.expected)})`;
-        case "beforeLastGo":
-          return `Départ de l'avant dernière pro à ${formatHoraire(
-            check.got
-          )} (au lieu de ${formatHoraire(check.expected)})`;
-        case "lastGo":
-          return `Départ de la dernière pro à ${formatHoraire(
-            check.got
-          )} (au lieu de ${formatHoraire(check.expected)})`;
-      }
-    case CheckKind.WrongAdaptationHoraire:
-      return `Horaires d'adaptation invalides (de ${formatHoraire(
-        check.got.debut
-      )} à ${formatHoraire(check.got.fin)})`;
-    case CheckKind.WrongRoulement:
-      return `Roulement invalide : ${check.gotOrder.join(
-        " / "
-      )} au lieu de ${check.expectedOrder.join(" / ")}`;
-  }
-}
 
 const dayToEdit = ref<int | null>(null);
 

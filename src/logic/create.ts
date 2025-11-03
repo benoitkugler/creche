@@ -1,7 +1,12 @@
 import {
+  buildProsCountDay,
   byPosition,
+  checkEnfantsCountDay,
+  checkPausesDay,
   ChildrenCount,
   expectedArrivals,
+  largeDay,
+  mediumDay,
   normalizeChildren,
   TimeGrid,
   type Arr4,
@@ -11,19 +16,24 @@ import {
 import { type PlanningChildren } from "./children";
 import {
   emptyHoraireTravail,
+  formatHoraireTravail,
+  type Detachement,
   type HoraireTravail,
   type PlanningPros,
   type PlanningProsSemaine,
   type Pro,
+  type Reunion,
   type SemainePro,
 } from "./pros";
 import type { PositionR, Roulements, SemaineRoulement } from "./roulement";
 import {
   arrayEquals,
+  computeDate,
   isError,
   newError,
   Range,
   type error,
+  type Horaire,
   type int,
   type SemaineOf,
 } from "./shared";
@@ -44,10 +54,10 @@ export function createPlanningPros(
 
   const R = roulements.length;
   const childrenN = normalizeChildren(children);
-  for (let week = 0; week < childrenN.length; week++) {
-    const weekChildren = childrenN[week];
+  for (let weekI = 0; weekI < childrenN.length; weekI++) {
+    const weekChildren = childrenN[weekI];
 
-    const roulementI = (firstWeekRoulement + week) % R;
+    const roulementI = (firstWeekRoulement + weekI) % R;
     const weekRoulement = roulements[roulementI];
 
     const prosHoraires = pros.map((pro) => ({
@@ -62,17 +72,25 @@ export function createPlanningPros(
     })) satisfies SemainePro[];
 
     for (let dayI = 0; dayI < 5; dayI++) {
-      console.log(week, dayI);
+      console.log(weekI, dayI);
 
-      selectDayHoraires(weekChildren[dayI]);
-
+      const dayCandidates = _selectDayHoraires(weekChildren[dayI]);
+      if (!dayCandidates.length) {
+        const date = computeDate(children.firstMonday, {
+          week: weekI,
+          day: dayI,
+        });
+        return newError(
+          `Aucun planning ne convient le ${date.toLocaleDateString("fr")}`
+        );
+      }
       //   const l = scaffoldDay(weekChildren[dayI], weekRoulement[dayI]);
       //   l.forEach(
       //     (horaire, proI) => (prosHoraires[proI].horaires[dayI] = horaire)
       //   );
     }
 
-    weeks.push({ week, roulement: roulementI, prosHoraires });
+    weeks.push({ week: weekI, roulement: roulementI, prosHoraires });
   }
 
   return { firstMonday: children.firstMonday, weeks: weeks };
@@ -197,22 +215,75 @@ function prosFromRoulement(pros: SemaineRoulement): Pro[] {
   }));
 }
 
+function pauseDuration(dayDuration: TimeGrid.Index) {
+  if (dayDuration >= largeDay) {
+    return 60;
+  } else if (dayDuration == mediumDay) {
+    return 45;
+  }
+  return 30;
+}
+
+// heuristics for pauses :
+// for ouverture, pause is at 10h, 10h30 or 11h
+const pausesStart1: Horaire[] = [
+  { heure: 10, minute: 0 },
+  { heure: 10, minute: 30 },
+  { heure: 11, minute: 0 },
+];
+// for matin, pause is either 10h30-11h, 11h-11h30 or at 13h
+const pausesStart2: Horaire[] = [
+  { heure: 10, minute: 30 },
+  { heure: 11, minute: 0 },
+  { heure: 13, minute: 0 },
+];
+// for soir, pause is between 13h30 and 14h30
+const pausesStart3: Horaire[] = [
+  { heure: 13, minute: 30 },
+  { heure: 13, minute: 45 },
+  { heure: 14, minute: 0 },
+  { heure: 14, minute: 15 },
+  { heure: 14, minute: 30 },
+];
+
+// for fermeture, pause is at 15h or 15h30
+const pausesStart4: Horaire[] = [
+  { heure: 15, minute: 0 },
+  { heure: 15, minute: 30 },
+];
+
+const pausesCombinationCount =
+  pausesStart1.length *
+  pausesStart2.length *
+  pausesStart3.length *
+  pausesStart4.length;
+
 // dayDurations are expressed in grid index, and in "rotation order"
 // the returned slices are in "rotation order"
 function generateHorairesFromDurations(
   arrivals: Arrivals,
-  dayDurations: Arr4<TimeGrid.Index>
-): Arr4<HoraireTravail>[] {
+  dayDurations: Arr4<TimeGrid.Index>,
+  out: Arr4<HoraireTravail>[]
+) {
   // TODO: handle less than 4 children
 
   // for each pro, there is 3 horaires to choose ;
   // - the "other" end of the day : defined by dayDurations
-  // - the pause : start + duration (30, 45 or 60 min)
+  // - the pause duration : defined by the day duration
+  //    - 8h30 -> 1h
+  //    - 8h15 -> 45min
+  //    - 8h or less -> 30min
+  // - the pause start
 
   const ouverture = TimeGrid.indexToHoraire(arrivals.firstArrival);
   const matin = TimeGrid.indexToHoraire(arrivals.secondArrival);
-  const soir = TimeGrid.indexToHoraire(arrivals.beforeLastGo);
-  const fermeture = TimeGrid.indexToHoraire(arrivals.lastGo);
+  const soir = TimeGrid.indexToHoraire(arrivals.beforeLastGo + 1); // arrivals is the last presence
+  const fermeture = TimeGrid.indexToHoraire(arrivals.lastGo + 1); // arrivals is the last presence
+
+  const pauseDuration1 = pauseDuration(dayDurations[0]);
+  const pauseDuration2 = pauseDuration(dayDurations[1]);
+  const pauseDuration3 = pauseDuration(dayDurations[2]);
+  const pauseDuration4 = pauseDuration(dayDurations[3]);
 
   // ouverture
   const fin1 = TimeGrid.indexToHoraire(arrivals.firstArrival + dayDurations[0]);
@@ -226,57 +297,38 @@ function generateHorairesFromDurations(
 
   // soir
   const debut3 = TimeGrid.indexToHoraire(
-    arrivals.beforeLastGo - dayDurations[2]
+    arrivals.beforeLastGo + 1 - dayDurations[2]
   );
   const presence3 = new Range(debut3, soir);
 
   // fermeture
-  const debut4 = TimeGrid.indexToHoraire(arrivals.lastGo - dayDurations[3]);
+  const debut4 = TimeGrid.indexToHoraire(arrivals.lastGo + 1 - dayDurations[3]);
   const presence4 = new Range(debut4, fermeture);
 
-  // heuristics for pauses :
-  // for ouverture, pause is either at 10h or 11h, for 30min
-  const pauses1 = [
-    Range.fromDuration({ heure: 10, minute: 0 }, 30),
-    Range.fromDuration({ heure: 11, minute: 0 }, 30),
-  ];
-  // for matin, pause is always at 13h, for 30 or 45min
-  const pauses2 = [
-    Range.fromDuration({ heure: 13, minute: 0 }, 30),
-    Range.fromDuration({ heure: 13, minute: 0 }, 45),
-  ];
-  // for soir, pause is between 13h30 and 14h30 (all duration possible)
-  const pauses3: Range[] = [];
-  for (const start of [
-    { heure: 13, minute: 30 },
-    { heure: 13, minute: 45 },
-    { heure: 14, minute: 0 },
-    { heure: 14, minute: 15 },
-    { heure: 14, minute: 30 },
-  ] as const) {
-    pauses3.push(
-      Range.fromDuration(start, 30),
-      Range.fromDuration(start, 45),
-      Range.fromDuration(start, 60)
-    );
-  }
-  // for fermeture, pause is at 15h or 15h30, for 30min
-  const pauses4 = [
-    Range.fromDuration({ heure: 15, minute: 0 }, 30),
-    Range.fromDuration({ heure: 15, minute: 30 }, 30),
-  ];
-
-  const out: Arr4<HoraireTravail>[] = [];
-  for (const pause1 of pauses1) {
-    for (const pause2 of pauses2) {
-      for (const pause3 of pauses3) {
-        for (const pause4 of pauses4) {
-          out.push([
-            { presence: presence1, pause: pause1 },
-            { presence: presence2, pause: pause2 },
-            { presence: presence3, pause: pause3 },
-            { presence: presence4, pause: pause4 },
-          ]);
+  let i = 0;
+  for (const pause1 of pausesStart1) {
+    for (const pause2 of pausesStart2) {
+      for (const pause3 of pausesStart3) {
+        for (const pause4 of pausesStart4) {
+          out[i] = [
+            {
+              presence: presence1,
+              pause: Range.fromDuration(pause1, pauseDuration1),
+            },
+            {
+              presence: presence2,
+              pause: Range.fromDuration(pause2, pauseDuration2),
+            },
+            {
+              presence: presence3,
+              pause: Range.fromDuration(pause3, pauseDuration3),
+            },
+            {
+              presence: presence4,
+              pause: Range.fromDuration(pause4, pauseDuration4),
+            },
+          ];
+          i++;
         }
       }
     }
@@ -285,30 +337,141 @@ function generateHorairesFromDurations(
   return out;
 }
 
-function selectDayHoraires(children: ChildrenCount[]) {
+function allDurations(min: TimeGrid.Index, max: TimeGrid.Index) {
+  const out: Arr4<TimeGrid.Index>[] = [];
+  for (let d1 = min; d1 <= max; d1 += 3) {
+    for (let d2 = min; d2 <= max; d2 += 3) {
+      for (let d3 = min; d3 <= max; d3 += 3) {
+        for (let d4 = min; d4 <= max; d4 += 3) {
+          out.push([d1, d2, d3, d4]);
+        }
+      }
+    }
+  }
+
+  // try overall less work first
+  out.sort((a, b) => a[0] + a[1] + a[2] + a[3] - (b[0] + b[1] + b[2] + b[3]));
+
+  console.log("Trying", out.length, "configs.");
+
+  return out;
+}
+
+export function _selectDayHoraires(children: ChildrenCount[]) {
+  // TODO: maybe support
+  const detachements: Arr4<Detachement | undefined> = [
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  ];
+  const reunionRange = undefined;
+
   const arrivals = expectedArrivals(children);
 
   // start with "maximal" durations
-  const startDuration: TimeGrid.Index = 9 * 12 + 6; // 9h30
-  const minDuration: TimeGrid.Index = 3 * 12; // 3h
-  const durations: Arr4<TimeGrid.Index> = [
-    startDuration,
-    startDuration,
-    startDuration,
-    startDuration,
-  ];
-  // try to decrease work duration 15min by 15min
-  let tryCount = 0;
-  while (durations.every((v) => v >= minDuration)) {
-    // try every pauses
-    const candidates = generateHorairesFromDurations(arrivals, durations);
+  const maxDuration: TimeGrid.Index = 10 * 12 + 6; // 10h30
+  const thresholdDuration: TimeGrid.Index = 8 * 12; // 8h
+  const minDuration: TimeGrid.Index = 4 * 12; // 4h
 
-    console.log(durations, candidates.length);
+  // For each pro, we have the follwing ranges :
+  //    - under [mediumDay] or over [largeDay] : reducing duration only makes things worse
+  //    - in between : it may be helpful to reduce work to also reduce pauses
 
-    // TODO: apply every "day by day" checks
+  let selectedDurations: Arr4<number> | undefined;
+  let selectedHoraires: Arr4<HoraireTravail>[] = [];
 
-    // decrease one pro day length; in a circular fashion
-    durations[tryCount % 4] -= 3;
-    tryCount += 1;
+  // we first brute-force search between 8h and 9h,
+  // less work first
+  const buffer: Arr4<HoraireTravail>[] = Array.from({
+    length: pausesCombinationCount,
+  });
+  for (const durations of allDurations(thresholdDuration, maxDuration)) {
+    const validHoraires = computeValidHoraires(
+      children,
+      arrivals,
+      detachements,
+      reunionRange,
+      durations,
+      buffer
+    );
+    if (validHoraires.length) {
+      // we have found a first (list of) solution
+      // save it, but try with the "under thresholdDuration" durations
+      selectedDurations = durations;
+      selectedHoraires = validHoraires;
+      break;
+    }
   }
+
+  console.log("Done");
+
+  if (selectedDurations === undefined) return []; // aie aie aie
+
+  // now try to reduce work for duration under thresholdDuration
+  // (other has been tried)
+  const prosToReduce = selectedDurations
+    .map((_, i) => i)
+    .filter((i) => selectedDurations[i] == thresholdDuration);
+  if (!prosToReduce.length) return selectedHoraires; // can't do better
+
+  let proCursor = 0;
+  while (selectedDurations.every((v) => v >= minDuration)) {
+    const validHoraires = computeValidHoraires(
+      children,
+      arrivals,
+      detachements,
+      reunionRange,
+      selectedDurations,
+      buffer
+    );
+
+    if (validHoraires.length) {
+      selectedHoraires = validHoraires;
+      // If we succeed, try with less work
+      const indexToReduce = prosToReduce[proCursor % prosToReduce.length];
+      selectedDurations[indexToReduce] -= 3;
+      proCursor++;
+    } else {
+      break;
+    }
+  }
+
+  return selectedHoraires;
+}
+
+export function computeValidHoraires(
+  children: ChildrenCount[],
+  arrivals: Arrivals,
+  detachements: Arr4<Detachement | undefined>,
+  reunionRange: Range | undefined,
+  durations: Arr4<TimeGrid.Index>,
+  buffer: Arr4<HoraireTravail>[]
+) {
+  // try every pauses ...
+  const candidates = generateHorairesFromDurations(arrivals, durations, buffer);
+
+  // ... and check if we have (at least) a solution that satisifies every "day by day" checks
+  const validHoraires = candidates.filter((candidate) => {
+    const pros = buildProsCountDay(candidate, detachements);
+    const checkChildrenCount = checkEnfantsCountDay(
+      children,
+      pros,
+      reunionRange
+    );
+
+    const ok1 = checkChildrenCount === undefined;
+    const checkPauses = candidate.map((proHoraire) =>
+      checkPausesDay(
+        { week: 0, day: 0 },
+        { prenom: "", isInterimaire: false, color: "" },
+        proHoraire
+      )
+    );
+    const ok2 = checkPauses.every((l) => !l.length);
+
+    return ok1 && ok2;
+  });
+
+  return validHoraires;
 }

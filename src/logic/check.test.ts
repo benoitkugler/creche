@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import {
   _checkAdaptationHoraires,
   _checkEnfantsCount,
-  _checkPauses,
+  checkPausesDay,
   _checkProsArrivals,
   _checkRepos,
   _checkReunion,
@@ -161,8 +161,8 @@ test("normalize enfants", () => {
   expect(day[0]).toEqual(ChildrenCount.zero());
   expect(day[1]).toEqual(ChildrenCount.zero());
   expect(day[2]).toEqual(new ChildrenCount(1, 1, 1));
-  expect(grid[0][2][2]).toEqual(new ChildrenCount(2, 1, 0));
-  expect(grid[0][2][6]).toEqual(new ChildrenCount(0, 1, 0));
+  expect(grid[0][2][2]).toEqual(new ChildrenCount(0, 2, 1));
+  expect(grid[0][2][6]).toEqual(new ChildrenCount(0, 0, 1));
 });
 
 test("normalize pros", () => {
@@ -269,7 +269,7 @@ test("normalize pros", () => {
 });
 
 function ec(adaptionCount: int, marcheurCount: int, nonMarcheurCount: int) {
-  return new ChildrenCount(marcheurCount, nonMarcheurCount, adaptionCount);
+  return new ChildrenCount(adaptionCount, marcheurCount, nonMarcheurCount);
 }
 
 test("check enfants count", () => {
@@ -304,6 +304,8 @@ test("check enfants count", () => {
   );
 
   expect(_checkEnfantsCount(ec(0, 5, 5), 2)).toBeUndefined();
+
+  expect(_checkEnfantsCount(ec(0, 0, 9), 2)).toBeUndefined();
 });
 
 test("check reunion1", () => {
@@ -683,63 +685,63 @@ test("check adaptations horaires", () => {
 test("check pauses", () => {
   const dayIndex = { week: 0, day: 0 };
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(6, 0), h(7, 0)),
       pause: Range.empty(),
     })
   ).toHaveLength(0);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(6, 0), h(11, 45)),
       pause: Range.empty(),
     })
   ).toHaveLength(0);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(6, 0), h(12, 0)),
       pause: Range.empty(),
     })
   ).toHaveLength(1);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(11, 0), h(14, 0)),
       pause: Range.empty(),
     })
   ).toHaveLength(1);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(13, 0), h(14, 0)),
       pause: Range.empty(),
     })
   ).toHaveLength(0);
 
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(11, 0), h(14, 0)),
       pause: r(h(13, 30), h(14, 0)),
     })
   ).toHaveLength(0);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(11, 0), h(14, 0)),
       pause: r(h(12, 50), h(14, 0)),
     })
   ).toHaveLength(1);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(11, 0), h(14, 0)),
       pause: r(h(13, 0), h(13, 10)),
     })
   ).toHaveLength(1);
   // large pause
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(8, 0), h(18, 0)),
       pause: r(h(13, 0), h(14, 0)),
     })
   ).toHaveLength(0);
   expect(
-    _checkPauses(dayIndex, pro, {
+    checkPausesDay(dayIndex, pro, {
       presence: r(h(8, 0), h(18, 0)),
       pause: r(h(13, 0), h(13, 45)),
     })
@@ -748,19 +750,19 @@ test("check pauses", () => {
   //   interim
   const interim = { prenom: "", color: "", isInterimaire: true };
   expect(
-    _checkPauses(dayIndex, interim, {
+    checkPausesDay(dayIndex, interim, {
       presence: r(h(10, 0), h(15, 0)),
       pause: r(h(12, 0), h(13, 0)),
     })
   ).toHaveLength(0);
   expect(
-    _checkPauses(dayIndex, interim, {
+    checkPausesDay(dayIndex, interim, {
       presence: r(h(10, 0), h(15, 0)),
       pause: r(h(13, 0), h(14, 0)),
     })
   ).toHaveLength(0);
   expect(
-    _checkPauses(dayIndex, interim, {
+    checkPausesDay(dayIndex, interim, {
       presence: r(h(8, 0), h(18, 0)),
       pause: r(h(13, 0), h(13, 45)),
     })
@@ -786,7 +788,7 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(31);
+  expect(check(planningChildren, planningPros)).toHaveLength(36);
 });
 
 test("check sample 2", async () => {
@@ -808,7 +810,7 @@ test("check sample 2", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(27);
+  expect(check(planningChildren, planningPros)).toHaveLength(32);
 });
 
 function hFromA(h: Heure, m: Minute): HoraireTravail {

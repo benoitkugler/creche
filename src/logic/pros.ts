@@ -2,7 +2,6 @@ import {
   isError,
   newError,
   parseHoraire,
-  parseRange,
   Range,
   readExcelFile,
   type Cell,
@@ -30,6 +29,10 @@ export function emptyHoraireTravail(): HoraireTravail {
     presence: Range.empty(),
     pause: Range.empty(),
   };
+}
+
+export function formatHoraireTravail(h: HoraireTravail) {
+  return `${h.presence.toString()} (pause: ${h.pause.toString()})`;
 }
 
 export type Detachement = { dayIndex: int; horaires: Range };
@@ -257,7 +260,7 @@ function parseRangeOrEmpty(
     return Range.empty();
   }
   const range = `${cellStart} ${cellEnd}`;
-  return parseRange(range);
+  return Range.parse(range);
 }
 
 function isReunionRow(row: Cell[]): Reunion | error | null {

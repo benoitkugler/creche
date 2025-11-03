@@ -4,8 +4,7 @@ import {
   type error,
   isError,
   newError,
-  parseRange,
-  type Range,
+  Range,
   type SemaineOf,
 } from "./shared";
 
@@ -106,7 +105,7 @@ export namespace Children {
           }
         });
 
-        const res = parseRange(day.Text);
+        const res = Range.parse(day.Text);
         if (isError(res)) return res;
 
         // index --> semaine and weekday
