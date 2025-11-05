@@ -39,26 +39,23 @@ const pausesCombinationCount =
     pausesStart3.len *
     pausesStart4.len;
 
-// 8h30
-const largeDay: sh.TimeIndex = 8 * 12 + 6;
-// 8h15
-const mediumDay: sh.TimeIndex = 8 * 12 + 3;
-
 fn pauseDuration(dayDuration: sh.TimeIndex) u8 {
-    if (dayDuration >= largeDay) {
+    if (dayDuration >= check.LargeDay) {
         return 60;
-    } else if (dayDuration == mediumDay) {
+    } else if (dayDuration == check.MediumDay) {
         return 45;
     }
     return 30;
 }
 
+const HorairesBuffer = [pausesCombinationCount][4]sh.HoraireTravail;
+
 // dayDurations are expressed in grid index, and in "rotation order"
 // the returned slices are in "rotation order"
 pub fn generateHorairesFromDurations(
     arrivals: check.Arrivals,
-    dayDurations: [4]sh.TimeIndex,
-    out: [pausesCombinationCount][4]sh.HoraireTravail,
+    dayDurations: Durations,
+    out: *HorairesBuffer,
 ) void {
     // TODO: handle less than 4 children
 
@@ -82,21 +79,21 @@ pub fn generateHorairesFromDurations(
 
     // ouverture
     const fin1 = sh.indexToHoraire(arrivals.firstArrival + dayDurations[0]);
-    const presence1 = sh.Range(ouverture, fin1);
+    const presence1 = sh.Range{ .start = ouverture, .end = fin1 };
 
     // matin
     const fin2 = sh.indexToHoraire(arrivals.secondArrival + dayDurations[1]);
-    const presence2 = sh.Range(matin, fin2);
+    const presence2 = sh.Range{ .start = matin, .end = fin2 };
 
     // soir
     const debut3 = sh.indexToHoraire(arrivals.beforeLastGo + 1 - dayDurations[2]);
-    const presence3 = sh.Range(debut3, soir);
+    const presence3 = sh.Range{ .start = debut3, .end = soir };
 
     // fermeture
     const debut4 = sh.indexToHoraire(arrivals.lastGo + 1 - dayDurations[3]);
-    const presence4 = sh.Range(debut4, fermeture);
+    const presence4 = sh.Range{ .start = debut4, .end = fermeture };
 
-    var i = 0;
+    var i: usize = 0;
     for (pausesStart1) |pause1| {
         for (pausesStart2) |pause2| {
             for (pausesStart3) |pause3| {
@@ -132,26 +129,169 @@ pub fn generateHorairesFromDurations(
 //     .initCapacity(allocator, 100);
 // defer buffer.deinit(allocator);
 
-fn compareDurations(_: void, a: [4]sh.TimeIndex, b: [4]sh.TimeIndex) bool {
+const Durations = [4]sh.TimeIndex;
+
+fn compareDurations(_: void, a: Durations, b: Durations) bool {
     return a[0] + a[1] + a[2] + a[3] <= (b[0] + b[1] + b[2] + b[3]);
 }
 
-fn allDurations(gpa: Allocator, min: sh.TimeIndex, max: sh.TimeIndex) std.ArrayList {
-    var buffer = try std.ArrayList([4]sh.TimeIndex).initCapacity(gpa, 100);
+fn allDurations(gpa: Allocator, min: sh.TimeIndex, max: sh.TimeIndex) std.ArrayList(Durations) {
+    var buffer = std.ArrayList(Durations).initCapacity(gpa, 100) catch unreachable;
 
     var d1, var d2, var d3, var d4 = .{ min, min, min, min };
     while (d1 <= max) : (d1 += 3) {
         while (d2 <= max) : (d2 += 3) {
             while (d3 <= max) : (d3 += 3) {
                 while (d4 <= max) : (d4 += 3) {
-                    buffer.append(gpa, .{ d1, d2, d3, d4 });
+                    buffer.append(gpa, .{ d1, d2, d3, d4 }) catch unreachable;
                 }
             }
         }
     }
 
     // try overall less work first
-    std.mem.sortUnstable([4]sh.TimeIndex, buffer.items, {}, compareDurations);
+    std.mem.sortUnstable(Durations, buffer.items, {}, compareDurations);
 
     return buffer;
+}
+
+// return the length of valid horaires
+fn computeValidHoraires(
+    children: check.ChildrenCountDay,
+    arrivals: check.Arrivals,
+    detachements: [4](?sh.Detachement),
+    reunionRange: ?sh.Range,
+    durations: Durations,
+    buffer: *HorairesBuffer,
+) usize {
+    // try every pauses ...
+    generateHorairesFromDurations(arrivals, durations, buffer);
+
+    // ... and check if we have (at least) a solution that satisifies every "day by day" checks
+    var currentIndex: usize = 0;
+    for (buffer) |candidate| {
+        const pros = check.buildProsCountDay(&candidate, &detachements);
+        const checkChildrenCount = check.checkChildrenCountDay(children, pros, reunionRange);
+
+        const ok1 = checkChildrenCount == null;
+
+        var ok2 = true;
+        const proNoInterim: sh.Pro = .{ .prenom = "", .isInterimaire = false, .color = "" };
+        for (candidate) |proHoraire| {
+            const diag = check.checkPauseDay(proNoInterim, proHoraire);
+            if (diag != null) {
+                ok2 = false;
+                break;
+            }
+        }
+        if (ok1 and ok2) {
+            buffer[currentIndex] = candidate;
+            currentIndex += 1;
+        }
+    }
+
+    return currentIndex;
+}
+
+fn overThresold(l: []const sh.TimeIndex, threshold: sh.TimeIndex) bool {
+    for (l) |value| {
+        if (value < threshold) {
+            return false;
+        }
+    }
+    return true;
+}
+
+pub fn selectDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][4]sh.HoraireTravail {
+    // TODO: maybe support
+    const detachements: [4](?sh.Detachement) = .{ null, null, null, null };
+    const reunionRange: ?sh.Range = null;
+
+    const arrivals = check.expectedArrivals(&children);
+
+    // start with "maximal" durations
+    const maxDuration: sh.TimeIndex = 10 * 12 + 6; // 10h30
+    const thresholdDuration: sh.TimeIndex = 8 * 12; // 8h
+    const minDuration: sh.TimeIndex = 4 * 12; // 4h
+
+    // For each pro, we have the follwing ranges :
+    //    - under [mediumDay] or over [largeDay] : reducing duration only makes things worse
+    //    - in between : it may be helpful to reduce work to also reduce pauses
+
+    var selectedDurations: ?Durations = null;
+    var selectedHoraires: [][4]sh.HoraireTravail = &.{};
+
+    // we first brute-force search between thresholdDuration and maxDuration,
+    // less work first
+    var buffer: HorairesBuffer = [_][4]sh.HoraireTravail{
+        [_]sh.HoraireTravail{.{ .presence = sh.Range.empty(), .pause = sh.Range.empty() }} ** 4,
+    } ** pausesCombinationCount;
+
+    var candidates = allDurations(gpa, thresholdDuration, maxDuration);
+    defer candidates.deinit(gpa);
+
+    for (candidates.items) |durations| {
+        const validHorairesLength = computeValidHoraires(children, arrivals, detachements, reunionRange, durations, &buffer);
+        if (validHorairesLength != 0) {
+            // we have found a first (list of) solution
+            // save it, but try with the "under thresholdDuration" durations
+            selectedDurations = durations;
+            selectedHoraires = buffer[0..validHorairesLength];
+            break;
+        }
+    }
+
+    var selectedDurationsM = selectedDurations orelse return &.{}; // aie aie aie
+
+    // now try to reduce work for duration under thresholdDuration
+    // (other has been tried)
+    var tmp = [4]usize{ 0, 0, 0, 0 };
+    var prosToReduce = std.ArrayList(usize).initBuffer(&tmp);
+    for (selectedDurationsM, 0..) |value, i| {
+        if (value == thresholdDuration) {
+            prosToReduce.appendBounded(i) catch unreachable;
+        }
+    }
+
+    if (prosToReduce.items.len == 0) return selectedHoraires; // can't do better
+
+    var proCursor: usize = 0;
+    while (overThresold(&selectedDurationsM, minDuration)) {
+        const validHorairesLength = computeValidHoraires(children, arrivals, detachements, reunionRange, selectedDurationsM, &buffer);
+
+        if (validHorairesLength != 0) {
+            selectedHoraires = buffer[0..validHorairesLength];
+            // If we succeed, try with less work
+            const indexToReduce = prosToReduce.items[proCursor % prosToReduce.items.len];
+            selectedDurationsM[indexToReduce] -= 3;
+            proCursor += 1;
+        } else {
+            break;
+        }
+    }
+
+    // alloc and copy
+    const out = gpa.alloc([4]sh.HoraireTravail, selectedHoraires.len) catch unreachable;
+    @memcpy(out, selectedHoraires);
+
+    return out;
+}
+
+test "selectDayHoraires" {
+    const gpa = std.testing.allocator;
+    var childrenCount: check.ChildrenCountDay = @splat(check.ChildrenCount{});
+    const t1 = sh.horaireToIndex(.{ .heure = 7, .minute = 0 });
+    const t2 = sh.horaireToIndex(.{ .heure = 9, .minute = 0 });
+    for (t1..t2) |timeI| {
+        childrenCount[timeI] = .{ .marcheurCount = 5, .nonMarcheurCount = 5 };
+    }
+    const t3 = sh.horaireToIndex(.{ .heure = 13, .minute = 0 });
+    const t4 = sh.horaireToIndex(.{ .heure = 15, .minute = 0 });
+    for (t3..t4) |timeI| {
+        childrenCount[timeI] = .{ .marcheurCount = 5, .nonMarcheurCount = 5 };
+    }
+    const out = selectDayHoraires(gpa, childrenCount);
+    defer gpa.free(out);
+
+    std.debug.print("Found {} solutions.\n", .{out.len});
 }
