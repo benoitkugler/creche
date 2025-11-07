@@ -27,7 +27,7 @@ export function compareHoraire(h1: Horaire, h2: Horaire) {
 }
 
 export class Range {
-  constructor(public debut: Horaire, public fin: Horaire) {}
+  constructor(public start: Horaire, public end: Horaire) {}
 
   static empty() {
     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
@@ -56,37 +56,37 @@ export class Range {
   }
 
   toString() {
-    return `${formatHoraire(this.debut)} ${formatHoraire(this.fin)}`;
+    return `${formatHoraire(this.start)} ${formatHoraire(this.end)}`;
   }
 
   isEmpty() {
-    return isBefore(this.fin, this.debut);
+    return isBefore(this.end, this.start);
   }
 
   contains(horaire: Horaire) {
     if (this.isEmpty()) return false;
-    return isBefore(this.debut, horaire) && isBefore(horaire, this.fin);
+    return isBefore(this.start, horaire) && isBefore(horaire, this.end);
   }
 
   /** returns true if other is (fully) included in this range */
   includes(other: Range) {
     if (other.isEmpty()) return true;
-    return isBefore(this.debut, other.debut) && isBefore(other.fin, this.fin);
+    return isBefore(this.start, other.start) && isBefore(other.end, this.end);
   }
 
   /** returns true is the intersection is non empty */
   overlaps(other: Range) {
     const intersection = new Range(
-      isBefore(this.debut, other.debut) ? other.debut : this.debut,
-      isBefore(this.fin, other.fin) ? this.fin : other.fin
+      isBefore(this.start, other.start) ? other.start : this.start,
+      isBefore(this.end, other.end) ? this.end : other.end
     );
     return !intersection.isEmpty();
   }
 
   /** renvoie la durée en minutes */
   duration(): int {
-    const debutM = this.debut.heure * 60 + this.debut.minute;
-    const finM = this.fin.heure * 60 + this.fin.minute;
+    const debutM = this.start.heure * 60 + this.start.minute;
+    const finM = this.end.heure * 60 + this.end.minute;
     return finM - debutM;
   }
 }

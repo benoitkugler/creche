@@ -132,16 +132,19 @@ pub fn generateHorairesFromDurations(
 const Durations = [4]sh.TimeIndex;
 
 fn compareDurations(_: void, a: Durations, b: Durations) bool {
-    return a[0] + a[1] + a[2] + a[3] <= (b[0] + b[1] + b[2] + b[3]);
+    return a[0] + a[1] + a[2] + a[3] < (b[0] + b[1] + b[2] + b[3]);
 }
 
 fn allDurations(gpa: Allocator, min: sh.TimeIndex, max: sh.TimeIndex) std.ArrayList(Durations) {
     var buffer = std.ArrayList(Durations).initCapacity(gpa, 100) catch unreachable;
 
-    var d1, var d2, var d3, var d4 = .{ min, min, min, min };
+    var d1 = min;
     while (d1 <= max) : (d1 += 3) {
+        var d2 = min;
         while (d2 <= max) : (d2 += 3) {
+            var d3 = min;
             while (d3 <= max) : (d3 += 3) {
+                var d4 = min;
                 while (d4 <= max) : (d4 += 3) {
                     buffer.append(gpa, .{ d1, d2, d3, d4 }) catch unreachable;
                 }
@@ -202,7 +205,7 @@ fn overThresold(l: []const sh.TimeIndex, threshold: sh.TimeIndex) bool {
     return true;
 }
 
-pub fn selectDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][4]sh.HoraireTravail {
+pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][4]sh.HoraireTravail {
     // TODO: maybe support
     const detachements: [4](?sh.Detachement) = .{ null, null, null, null };
     const reunionRange: ?sh.Range = null;
@@ -223,12 +226,12 @@ pub fn selectDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][4]
 
     // we first brute-force search between thresholdDuration and maxDuration,
     // less work first
-    var buffer: HorairesBuffer = [_][4]sh.HoraireTravail{
-        [_]sh.HoraireTravail{.{ .presence = sh.Range.empty(), .pause = sh.Range.empty() }} ** 4,
-    } ** pausesCombinationCount;
+    var buffer: HorairesBuffer = @splat(@splat(.{ .presence = sh.Range.empty(), .pause = sh.Range.empty() }));
 
     var candidates = allDurations(gpa, thresholdDuration, maxDuration);
     defer candidates.deinit(gpa);
+
+    std.debug.print("testing {} candidates\n", .{candidates.items.len});
 
     for (candidates.items) |durations| {
         const validHorairesLength = computeValidHoraires(children, arrivals, detachements, reunionRange, durations, &buffer);
@@ -277,8 +280,9 @@ pub fn selectDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][4]
     return out;
 }
 
-test "selectDayHoraires" {
+test "selectDayHoraires Simple" {
     const gpa = std.testing.allocator;
+
     var childrenCount: check.ChildrenCountDay = @splat(check.ChildrenCount{});
     const t1 = sh.horaireToIndex(.{ .heure = 7, .minute = 0 });
     const t2 = sh.horaireToIndex(.{ .heure = 9, .minute = 0 });
@@ -290,8 +294,45 @@ test "selectDayHoraires" {
     for (t3..t4) |timeI| {
         childrenCount[timeI] = .{ .marcheurCount = 5, .nonMarcheurCount = 5 };
     }
-    const out = selectDayHoraires(gpa, childrenCount);
+    const out = generateDayHoraires(gpa, childrenCount);
     defer gpa.free(out);
+    try std.testing.expectEqual(18, out.len);
+}
 
-    std.debug.print("Found {} solutions.\n", .{out.len});
+test "selectDayHoraires Real" {
+    const gpa = std.testing.allocator;
+
+    const file = try std.fs.cwd().readFileAlloc(gpa, "testdata/children_0.json", std.math.maxInt(usize));
+    defer gpa.free(file);
+    const parsed = try std.json.parseFromSlice(sh.ChildrenPlanning, gpa, file, .{ .ignore_unknown_fields = true });
+    defer parsed.deinit();
+    var children: sh.ChildrenPlanning = parsed.value;
+
+    const childrenCounts = check.buildChildrenCount(gpa, children);
+    defer gpa.free(childrenCounts);
+    try std.testing.expect(childrenCounts.len == 5);
+
+    const out1 = generateDayHoraires(gpa, childrenCounts[0][3]);
+    defer gpa.free(out1);
+    try std.testing.expectEqual(2, out1.len);
+
+    const out2 = generateDayHoraires(gpa, childrenCounts[1][0]);
+    defer gpa.free(out2);
+    try std.testing.expectEqual(1, out2.len);
+
+    // add an adaptation
+    if (children.children[4].creneaux[1][0]) |*ptr| {
+        ptr.*.isAdaptation = true;
+    }
+    const childrenCounts2 = check.buildChildrenCount(gpa, children);
+    defer gpa.free(childrenCounts2);
+
+    const start = try std.time.Instant.now();
+
+    const out3 = generateDayHoraires(gpa, childrenCounts2[1][0]);
+    defer gpa.free(out3);
+    try std.testing.expectEqual(1, out3.len);
+
+    const end = try std.time.Instant.now();
+    std.debug.print("Time spent {} ms\n", .{end.since(start) / 1000000});
 }

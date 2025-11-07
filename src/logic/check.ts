@@ -149,8 +149,8 @@ export function formatCheck(check: Check): string {
     case CheckKind.WrongPauseHoraire:
       return `Horaires de la pause invalides pour ${
         check.pro.prenom
-      } (de ${formatHoraire(check.got.debut)} à ${formatHoraire(
-        check.got.fin
+      } (de ${formatHoraire(check.got.start)} à ${formatHoraire(
+        check.got.end
       )}).`;
     case CheckKind.WrongDepartArriveePro:
       switch (check.moment) {
@@ -173,8 +173,8 @@ export function formatCheck(check: Check): string {
       }
     case CheckKind.WrongAdaptationHoraire:
       return `Horaires d'adaptation invalides (de ${formatHoraire(
-        check.got.debut
-      )} à ${formatHoraire(check.got.fin)})`;
+        check.got.start
+      )} à ${formatHoraire(check.got.end)})`;
     case CheckKind.WrongRoulement:
       return `Roulement invalide : ${check.gotOrder.join(
         " / "
@@ -226,7 +226,7 @@ export function check(
   });
 
   // Adaptation 2
-  children.enfants.forEach((child) => {
+  children.children.forEach((child) => {
     child.creneaux.forEach((week, weekI) => {
       week.forEach((day, dayI) => {
         if (day == null || !day.isAdaptation) return;
@@ -305,8 +305,8 @@ export namespace TimeGrid {
 
   export function rangeToBounds(range: Range) {
     return [
-      TimeGrid.horaireToIndex(range.debut),
-      TimeGrid.horaireToIndex(range.fin),
+      TimeGrid.horaireToIndex(range.start),
+      TimeGrid.horaireToIndex(range.end),
     ];
   }
 
@@ -391,7 +391,7 @@ export function normalizeChildren(
       ] as SemaineOf<ChildrenCount[]>
   );
 
-  for (const enfant of input.enfants) {
+  for (const enfant of input.children) {
     enfant.creneaux.forEach((semaine, iSemaine) => {
       semaine.forEach((day, iDay) => {
         if (day === null) return;
@@ -399,7 +399,7 @@ export function normalizeChildren(
         for (const index of TimeGrid.rangeToIndexes(day.horaires)) {
           if (day.isAdaptation) {
             currentDay[index].adaptionCount += 1;
-          } else if (enfant.enfant.isMarcheur) {
+          } else if (enfant.child.isMarcheur) {
             currentDay[index].marcheurCount += 1;
           } else {
             currentDay[index].nonMarcheurCount += 1;
@@ -720,7 +720,7 @@ export function checkPausesDay(
       return [
         {
           dayIndex,
-          horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+          horaireIndex: TimeGrid.horaireToIndex(horaires.pause.start),
           check: {
             kind: CheckKind.WrongPauseDuration,
             pro,
@@ -739,13 +739,13 @@ export function checkPausesDay(
     const workDuration = horaires.presence.duration();
     const isPauseMandatory =
       workDuration >= thresholdInMinutes ||
-      arrivalInMeal.contains(horaires.presence.debut);
+      arrivalInMeal.contains(horaires.presence.start);
 
     if (isPauseMandatory) {
       return [
         {
           dayIndex,
-          horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+          horaireIndex: TimeGrid.horaireToIndex(horaires.pause.start),
           check: {
             kind: CheckKind.MissingPause,
             pro,
@@ -761,7 +761,7 @@ export function checkPausesDay(
   if (repas.overlaps(horaires.pause)) {
     out.push({
       dayIndex,
-      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.start),
       check: {
         kind: CheckKind.WrongPauseHoraire,
         pro,
@@ -773,7 +773,7 @@ export function checkPausesDay(
   if (pauseDuration < 30 || pauseDuration > 60) {
     out.push({
       dayIndex,
-      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.start),
       check: {
         kind: CheckKind.WrongPauseDuration,
         pro,
@@ -787,7 +787,7 @@ export function checkPausesDay(
   if (amplitude >= 5 * largeDay && pauseDuration < 60) {
     out.push({
       dayIndex,
-      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.start),
       check: {
         kind: CheckKind.WrongPauseDuration,
         pro,
@@ -798,7 +798,7 @@ export function checkPausesDay(
   } else if (amplitude == 5 * mediumDay && pauseDuration < 45) {
     out.push({
       dayIndex,
-      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.debut),
+      horaireIndex: TimeGrid.horaireToIndex(horaires.pause.start),
       check: {
         kind: CheckKind.WrongPauseDuration,
         pro,
@@ -872,7 +872,7 @@ export function _checkRepos(pros: PlanningPros): Diagnostic[] {
         out.push({
           dayIndex: { week: semaine.week, day: iDay },
           horaireIndex: TimeGrid.horaireToIndex(
-            pro.horaires[iDay].presence.fin
+            pro.horaires[iDay].presence.end
           ),
           check: { kind: CheckKind.NotEnoughSleep, ...c },
         });
@@ -893,14 +893,14 @@ function _checkReposNight(
   }
   const expectedRepos = 11; // heures
   const lendemain: Horaire = {
-    heure: (day.fin.heure + expectedRepos - 24) as Heure,
-    minute: day.fin.minute,
+    heure: (day.end.heure + expectedRepos - 24) as Heure,
+    minute: day.end.minute,
   };
-  if (isBefore(lendemain, following.debut)) {
+  if (isBefore(lendemain, following.start)) {
     // all good!
     return;
   }
-  return { pro, expectedLendemain: lendemain, gotLendemain: following.debut };
+  return { pro, expectedLendemain: lendemain, gotLendemain: following.start };
 }
 
 // returns a shallow copy of `pros`, ordered according to
@@ -944,7 +944,7 @@ export function _checkRoulements(
       }
 
       const prosHoraires = pros4.map((pro, index) => ({
-        arrival: pro.presence.debut,
+        arrival: pro.presence.start,
         pro: index,
       })); // ordered by pro
       prosHoraires.sort((a, b) => compareHoraire(a.arrival, b.arrival));

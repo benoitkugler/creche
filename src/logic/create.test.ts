@@ -28,13 +28,20 @@ test("select horaires", async () => {
   const planningChildren = await loadChildren(
     "src/logic/sample_enfants_redacted_0.json"
   );
-  const norm1 = normalizeChildren(planningChildren);
-  const props1 = _selectDayHoraires(norm1[0][3]);
-  expect(props1).not.toHaveLength(0);
-  console.log(props1.map((prop) => prop.map(formatHoraireTravail)));
+
+  //   const s = JSON.stringify({
+  //     ...planningChildren,
+  //     weekCount: Children.semaineCount(planningChildren),
+  //   });
+  //   Bun.write("impl/testdata/children_0.json", s);
+
+  //   const norm1 = normalizeChildren(planningChildren);
+  //   const props1 = _selectDayHoraires(norm1[0][3]);
+  //   expect(props1).not.toHaveLength(0);
+  //   console.log(props1.map((prop) => prop.map(formatHoraireTravail)));
 
   //   console.log(planningChildren.enfants[4].creneaux[1][0]);
-  planningChildren.enfants[4].creneaux[1][0]!.isAdaptation = true;
+  planningChildren.children[4].creneaux[1][0]!.isAdaptation = true;
   const norm2 = normalizeChildren(planningChildren);
   const props2 = _selectDayHoraires(norm2[1][0]);
 

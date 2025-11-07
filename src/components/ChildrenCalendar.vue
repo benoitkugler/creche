@@ -16,19 +16,19 @@
               {{ formatDay(day) }}
             </th>
           </tr>
-          <tr v-for="enfant in inner.enfants">
+          <tr v-for="enfant in inner.children">
             <td>
-              {{ enfant.enfant.nom }} <br />
-              {{ enfant.enfant.dateNaissance?.toLocaleDateString() || "" }}
+              {{ enfant.child.nom }} <br />
+              {{ enfant.child.dateNaissance }}
             </td>
             <td class="text-center">
               <v-checkbox-btn
                 density="compact"
                 inline
-                :model-value="enfant.enfant.isMarcheur"
+                :model-value="enfant.child.isMarcheur"
                 @update:model-value="
                   (v) => {
-                    enfant.enfant.isMarcheur = v;
+                    enfant.child.isMarcheur = v;
                     emit('update', inner);
                   }
                 "
@@ -134,8 +134,8 @@ function formatDay(day: DayIndex) {
 
 function formatHoraires(creneau: CreneauEnfant | null) {
   if (creneau === null) return "";
-  return `${formatHoraire(creneau.horaires.debut)} ${formatHoraire(
-    creneau.horaires.fin
+  return `${formatHoraire(creneau.horaires.start)} ${formatHoraire(
+    creneau.horaires.end
   )}`;
 }
 </script>

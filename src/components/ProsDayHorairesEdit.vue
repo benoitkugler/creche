@@ -12,26 +12,26 @@
         <v-col>
           <HoraireField
             label="Arrivée"
-            v-model="inner[index].presence.debut"
+            v-model="inner[index].presence.start"
           ></HoraireField>
         </v-col>
         <v-col>
           <HoraireField
             label="Départ"
-            v-model="inner[index].presence.fin"
+            v-model="inner[index].presence.end"
           ></HoraireField>
         </v-col>
         <v-divider vertical thickness="4"></v-divider>
         <v-col>
           <HoraireField
             label="Pause (début)"
-            v-model="inner[index].pause.debut"
+            v-model="inner[index].pause.start"
           ></HoraireField>
         </v-col>
         <v-col>
           <HoraireField
             label="Pause (fin)"
-            v-model="inner[index].pause.fin"
+            v-model="inner[index].pause.end"
           ></HoraireField>
         </v-col>
       </v-row>

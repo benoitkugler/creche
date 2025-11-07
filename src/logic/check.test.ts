@@ -30,12 +30,12 @@ import { Pros, type HoraireTravail, type PlanningPros, type Pro } from "./pros";
 
 const enfantMarcheur: Child = {
   nom: "Benoit",
-  dateNaissance: new Date(),
+  dateNaissance: "",
   isMarcheur: true,
 };
 const enfantNonMarcheur: Child = {
   nom: "Benoit",
-  dateNaissance: new Date(),
+  dateNaissance: "",
   isMarcheur: false,
 };
 
@@ -108,17 +108,17 @@ test("range overlaps", () => {
 });
 
 test("range from duration", () => {
-  expect(Range.fromDuration(h(6, 30), 20).fin).toEqual(h(6, 50));
-  expect(Range.fromDuration(h(6, 30), 40).fin).toEqual(h(7, 10));
-  expect(Range.fromDuration(h(6, 30), 150).fin).toEqual(h(9, 0));
+  expect(Range.fromDuration(h(6, 30), 20).end).toEqual(h(6, 50));
+  expect(Range.fromDuration(h(6, 30), 40).end).toEqual(h(7, 10));
+  expect(Range.fromDuration(h(6, 30), 150).end).toEqual(h(9, 0));
 });
 
 test("normalize enfants", () => {
   const grid = normalizeChildren({
     firstMonday: new Date(),
-    enfants: [
+    children: [
       {
-        enfant: enfantMarcheur,
+        child: enfantMarcheur,
         creneaux: [
           [
             null,
@@ -130,7 +130,7 @@ test("normalize enfants", () => {
         ],
       },
       {
-        enfant: enfantMarcheur,
+        child: enfantMarcheur,
         creneaux: [
           [
             null,
@@ -142,7 +142,7 @@ test("normalize enfants", () => {
         ],
       },
       {
-        enfant: enfantNonMarcheur,
+        child: enfantNonMarcheur,
         creneaux: [
           [
             null,
@@ -308,7 +308,7 @@ test("check enfants count", () => {
   expect(_checkEnfantsCount(ec(0, 0, 9), 2)).toBeUndefined();
 });
 
-test("check reunion1", () => {
+test("check reunion", () => {
   const planning: PlanningPros = {
     firstMonday: new Date(2025, 8, 1),
     weeks: [
@@ -563,7 +563,7 @@ test("check repos", () => {
   expect(diags[0].check.expectedLendemain).toEqual(h(7, 15));
 });
 
-test("check pro arrivals", () => {
+test("check pros arrivals", () => {
   const enfants2 = [
     ec(0, 0, 0),
     ec(0, 0, 0),
@@ -682,7 +682,7 @@ test("check adaptations horaires", () => {
   expect(_checkAdaptationHoraires(r(h(15, 45), h(17, 45)))).not.toBeUndefined();
 });
 
-test("check pauses", () => {
+test("check pause day", () => {
   const dayIndex = { week: 0, day: 0 };
   expect(
     checkPausesDay(dayIndex, pro, {
@@ -777,7 +777,7 @@ test("check sample 1", async () => {
   if (isError(planningChildren)) return;
 
   for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
-    planningChildren.enfants[index].enfant.isMarcheur = true;
+    planningChildren.children[index].child.isMarcheur = true;
   }
 
   const prosF = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
@@ -799,7 +799,7 @@ test("check sample 2", async () => {
   if (isError(planningChildren)) return;
 
   for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
-    planningChildren.enfants[index].enfant.isMarcheur = true;
+    planningChildren.children[index].child.isMarcheur = true;
   }
 
   const prosF = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");

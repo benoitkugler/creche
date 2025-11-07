@@ -50,13 +50,13 @@
               <v-col>
                 <HoraireField
                   label="Détachement (début)"
-                  v-model="inner[index].horaires.debut"
+                  v-model="inner[index].horaires.start"
                 ></HoraireField>
               </v-col>
               <v-col>
                 <HoraireField
                   label="Détachement (fin)"
-                  v-model="inner[index].horaires.fin"
+                  v-model="inner[index].horaires.end"
                 ></HoraireField>
               </v-col>
               <v-col align-self="center" cols="auto">

@@ -87,7 +87,7 @@ const step = ref<"load-files" | "view-children" | "view-pros">("load-files");
 
 const planningChildren = ref<PlanningChildren>({
   firstMonday: new Date(),
-  enfants: [],
+  children: [],
 });
 
 const planningPros = ref<PlanningPros>({
