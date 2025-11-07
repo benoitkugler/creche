@@ -10,7 +10,7 @@ import {
 
 export type Child = {
   nom: string;
-  dateNaissance: Date | null;
+  dateNaissance: string; // maybe empty
   isMarcheur: boolean;
 };
 
@@ -20,13 +20,13 @@ type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
 
 export type PlanningChildren = {
   firstMonday: Date; // lien avec le calendrier réel
-  enfants: { enfant: Child; creneaux: CreneauxEnfant }[];
+  children: { child: Child; creneaux: CreneauxEnfant }[];
 };
 
 export namespace Children {
   /** returns the maximum semaine */
   export function semaineCount(input: PlanningChildren) {
-    return Math.max(...input.enfants.map((e) => e.creneaux.length));
+    return Math.max(...input.children.map((e) => e.creneaux.length));
   }
 
   function _firstDay(creneaux: CreneauxEnfant): DayIndex | null {
@@ -45,7 +45,7 @@ export namespace Children {
   /** returns the actual first day (which also specifies the month) */
   export function firstDay(input: PlanningChildren) {
     const days = [];
-    for (const enfant of input.enfants) {
+    for (const enfant of input.children) {
       const day = _firstDay(enfant.creneaux);
       if (day == null) continue;
       days.push(computeDate(input.firstMonday, day));
@@ -81,7 +81,7 @@ export namespace Children {
       firstDay.getTime() - offset * 24 * 60 * 60 * 1000
     );
 
-    const out: PlanningChildren = { firstMonday, enfants: [] };
+    const out: PlanningChildren = { firstMonday, children: [] };
     for (const childRow of rows) {
       const enfant = parseChild(childRow[0].Text);
 
@@ -117,14 +117,14 @@ export namespace Children {
         creneaux[semaineI][dayI] = { horaires: res, isAdaptation: false };
       }
 
-      out.enfants.push({ enfant, creneaux });
+      out.children.push({ child: enfant, creneaux });
     }
 
     // the first week may be empty if the 01 is a Saturday or Sunday:
     // remove it and shift firstMonday
     if (firstDayDay == 6 || firstDayDay == 7) {
       out.firstMonday.setDate(out.firstMonday.getDate() + 7);
-      out.enfants.forEach((enfant) => enfant.creneaux.splice(0, 1));
+      out.children.forEach((enfant) => enfant.creneaux.splice(0, 1));
     }
     return out;
   }
@@ -203,17 +203,8 @@ function parseDay(month: number, year: number, s: string): Date {
 function parseChild(cell: string): Child {
   cell = cell.trim();
 
-  let dateNaissance = null;
   const hasDate = cell.length >= 10 && cell.includes("/");
-  if (hasDate) {
-    const dateString = cell.substring(cell.length - 10);
-    const parts = dateString.split("/");
-    dateNaissance = new Date(
-      parseInt(parts[2]),
-      parseInt(parts[1]) - 1,
-      parseInt(parts[0])
-    );
-  }
+  const dateNaissance = hasDate ? cell.substring(cell.length - 10) : "";
 
   const nom = cell
     .substring(0, hasDate ? cell.length - 10 : undefined)

@@ -10,8 +10,8 @@ test("parse personnel 0", async () => {
   if (isError(res)) return;
 
   expect(res.firstMonday.toISOString()).toBe("2025-09-01T00:00:00.000Z");
-  expect(res.enfants).toHaveLength(12);
-  const enfant = res.enfants[1];
+  expect(res.children).toHaveLength(12);
+  const enfant = res.children[1];
   expect(enfant.creneaux).toHaveLength(5);
   const semaine = enfant.creneaux[2]!;
   expect(semaine[2]?.horaires).toEqual(
@@ -27,8 +27,8 @@ test("parse personnel 1", async () => {
   if (isError(res)) return;
 
   expect(res.firstMonday.toISOString()).toBe("2025-09-29T00:00:00.000Z");
-  expect(res.enfants).toHaveLength(13);
-  const enfant = res.enfants[1];
+  expect(res.children).toHaveLength(13);
+  const enfant = res.children[1];
   expect(enfant.creneaux).toHaveLength(5);
   const semaine = enfant.creneaux[2]!;
   expect(semaine[0]?.horaires).toEqual(
@@ -44,21 +44,21 @@ test("parse personnel 2", async () => {
   if (isError(res)) return;
 
   expect(res.firstMonday.toISOString()).toBe("2025-11-03T00:00:00.000Z");
-  expect(res.enfants).toHaveLength(14);
-  const enfant = res.enfants[0];
+  expect(res.children).toHaveLength(14);
+  const enfant = res.children[0];
   expect(enfant.creneaux).toHaveLength(4);
 
-  const enfantNoDate = res.enfants[3];
-  expect(enfantNoDate.enfant.nom).toBe("DUWER DUFOREST Alan");
-  expect(enfantNoDate.enfant.dateNaissance).toBeNull();
+  const enfantNoDate = res.children[3];
+  expect(enfantNoDate.child.nom).toBe("DUWER DUFOREST Alan");
+  expect(enfantNoDate.child.dateNaissance).toBe("");
 
-  const enfantHoraireInvalid = res.enfants[12];
+  const enfantHoraireInvalid = res.children[12];
   const semaine = enfantHoraireInvalid.creneaux[2];
   expect(semaine[3]?.horaires).toEqual(
     new Range({ heure: 8, minute: 0 }, { heure: 18, minute: 0 })
   );
 
-  const enfantLast = res.enfants[13];
+  const enfantLast = res.children[13];
   const semaineLast = enfantLast.creneaux[3];
   expect(semaineLast[3]?.horaires).not.toBeUndefined();
   expect(semaineLast[4]?.horaires).not.toBeUndefined();

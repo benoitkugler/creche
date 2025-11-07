@@ -47,10 +47,10 @@ const emit = defineEmits<{}>();
 
 const heights = computed(() => {
   const stepHeight = 3; // in pixels
-  const h1 = TimeGrid.horaireToIndex(props.horaires.presence.debut);
-  const h2 = TimeGrid.horaireToIndex(props.horaires.pause.debut);
-  const h3 = TimeGrid.horaireToIndex(props.horaires.pause.fin);
-  const h4 = TimeGrid.horaireToIndex(props.horaires.presence.fin);
+  const h1 = TimeGrid.horaireToIndex(props.horaires.presence.start);
+  const h2 = TimeGrid.horaireToIndex(props.horaires.pause.start);
+  const h3 = TimeGrid.horaireToIndex(props.horaires.pause.end);
+  const h4 = TimeGrid.horaireToIndex(props.horaires.presence.end);
   return [
     h1 * stepHeight,
     h2 * stepHeight,

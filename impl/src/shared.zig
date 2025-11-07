@@ -5,11 +5,11 @@ pub const Horaire = struct {
     minute: u8,
 
     // returns true if h1 <= h2
-    fn isBefore(h1: Horaire, h2: Horaire) bool {
+    pub fn isBefore(h1: Horaire, h2: Horaire) bool {
         return compare(h1, h2) != 1;
     }
 
-    fn compare(h1: Horaire, h2: Horaire) i8 {
+    pub fn compare(h1: Horaire, h2: Horaire) i8 {
         if (h1.heure < h2.heure) return -1;
         if (h1.heure > h2.heure) return 1;
         if (h1.minute < h2.minute) return -1;
@@ -40,6 +40,12 @@ pub const Range = struct {
     pub fn contains(self: Range, horaire: Horaire) bool {
         if (self.isEmpty()) return false;
         return Horaire.isBefore(self.start, horaire) and Horaire.isBefore(horaire, self.end);
+    }
+
+    // returns true if other is (fully) included in this range.
+    pub fn includes(self: Range, other: Range) bool {
+        if (other.isEmpty()) return true;
+        return Horaire.isBefore(self.start, other.start) and Horaire.isBefore(other.end, self.end);
     }
 
     // returns true is the intersection is non empty
@@ -102,6 +108,8 @@ const HeureMax = 22; // exclus
 
 pub const TimeIndex = u16;
 
+pub const TimeIndexEmpty: TimeIndex = 0xFFFF;
+
 pub const TimeGridLength = 12 * (HeureMax - HeureMin);
 
 pub fn minutesToIndex(m: u8) TimeIndex {
@@ -139,3 +147,57 @@ pub const Pro = struct {
     color: string, // #HEX format
     isInterimaire: bool,
 };
+
+pub fn WeekOf(comptime T: type) type {
+    return [5]T;
+}
+
+pub const Child = struct {
+    nom: string,
+    dateNaissance: string, // maybe empty
+    isMarcheur: bool,
+};
+
+pub const ChildDay = struct {
+    horaires: Range,
+    isAdaptation: bool,
+};
+
+pub const ChildCreneaux = struct {
+    child: Child,
+    creneaux: []WeekOf(?ChildDay),
+};
+
+pub const ChildrenPlanning = struct {
+    children: []ChildCreneaux,
+    weekCount: usize,
+};
+
+pub const WeekPro = struct {
+    pro: Pro,
+    horaires: WeekOf(HoraireTravail),
+    detachement: ?Detachement = null,
+};
+
+pub const Reunion = struct {
+    day: u8,
+    horaire: Horaire, // la durée est toujours d'une heure
+
+    pub fn range(reu: Reunion) Range {
+        return Range{ .start = reu.horaire, .end = Horaire{
+            .heure = reu.horaire.heure + 1,
+            .minute = reu.horaire.minute,
+        } };
+    }
+};
+
+pub const WeekPros = struct {
+    week: i32, // index (0 based) par rapport au tableau des enfants
+    prosHoraires: []const WeekPro, // pour chaque pro
+    roulement: u8, // index 0-based (entre 0 et 3) du roulement pour cette semaine
+    reunion: ?Reunion = null,
+};
+
+pub const Position = enum { o, m, s, f };
+
+pub const Roulements = []const WeekOf([4]Position);
