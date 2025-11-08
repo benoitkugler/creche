@@ -776,9 +776,9 @@ test("check sample 1", async () => {
   expect(isError(planningChildren)).toBeFalse();
   if (isError(planningChildren)) return;
 
-  for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
-    planningChildren.children[index].child.isMarcheur = true;
-  }
+  //   for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
+  //     planningChildren.children[index].child.isMarcheur = true;
+  //   }
 
   const prosF = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
   const planningPros = await Pros.parseExcelPros(
@@ -788,7 +788,17 @@ test("check sample 1", async () => {
   expect(isError(planningPros)).toBeFalse();
   if (isError(planningPros)) return;
 
-  expect(check(planningChildren, planningPros)).toHaveLength(36);
+  //   const jsonC = JSON.stringify({
+  //     ...planningChildren,
+  //     weekCount: Children.semaineCount(planningChildren),
+  //   });
+  //   Bun.write("impl/testdata/children_0.json", jsonC);
+
+  //   const jsonP = JSON.stringify(planningPros);
+  //   Bun.write("impl/testdata/pros_0.json", jsonP);
+
+  const diags = check(planningChildren, planningPros);
+  expect(diags).toHaveLength(36);
 });
 
 test("check sample 2", async () => {
@@ -798,9 +808,9 @@ test("check sample 2", async () => {
   expect(isError(planningChildren)).toBeFalse();
   if (isError(planningChildren)) return;
 
-  for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
-    planningChildren.children[index].child.isMarcheur = true;
-  }
+  //   for (const index of [1, 2, 3, 4, 5, 6, 8, 9]) {
+  //     planningChildren.children[index].child.isMarcheur = true;
+  //   }
 
   const prosF = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
   const planningPros = await Pros.parseExcelPros(

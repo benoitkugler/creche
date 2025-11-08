@@ -64,6 +64,16 @@ pub const Range = struct {
         if (debutM > finM) return 0;
         return finM - debutM;
     }
+
+    pub fn bounds(range: Range) [2]TimeIndex {
+        if (range.isEmpty()) {
+            return [2]TimeIndex{ 0, 0 };
+        }
+        return [2]TimeIndex{
+            horaireToIndex(range.start),
+            horaireToIndex(range.end),
+        };
+    }
 };
 
 fn ho(h: u8, m: u8) Horaire {
@@ -128,12 +138,6 @@ pub fn indexToHoraire(index: TimeIndex) Horaire {
         .minute = (minute * 5),
     };
 }
-pub fn rangeToBounds(range: Range) [2]TimeIndex {
-    return [2]TimeIndex{
-        horaireToIndex(range.start),
-        horaireToIndex(range.end) - 1,
-    };
-}
 
 pub const Detachement = struct {
     dayIndex: u8,
@@ -183,21 +187,42 @@ pub const Reunion = struct {
     day: u8,
     horaire: Horaire, // la durée est toujours d'une heure
 
-    pub fn range(reu: Reunion) Range {
-        return Range{ .start = reu.horaire, .end = Horaire{
-            .heure = reu.horaire.heure + 1,
-            .minute = reu.horaire.minute,
+    pub fn range(self: Reunion) Range {
+        return Range{ .start = self.horaire, .end = Horaire{
+            .heure = self.horaire.heure + 1,
+            .minute = self.horaire.minute,
         } };
     }
 };
 
 pub const WeekPros = struct {
-    week: i32, // index (0 based) par rapport au tableau des enfants
+    week: usize, // index (0 based) par rapport au tableau des enfants
     prosHoraires: []const WeekPro, // pour chaque pro
     roulement: u8, // index 0-based (entre 0 et 3) du roulement pour cette semaine
     reunion: ?Reunion = null,
 };
 
-pub const Position = enum { o, m, s, f };
+pub const ProsPlanning = struct {
+    weeks: []const WeekPros,
 
-pub const Roulements = []const WeekOf([4]Position);
+    pub fn weekCount(input: ProsPlanning) usize {
+        var max: usize = 0;
+        for (input.weeks) |week| {
+            if (week.week > max) {
+                max = week.week;
+            }
+        }
+        return max + 1;
+    }
+};
+
+pub const Creneau = enum { o, m, s, f };
+
+pub const Roulements = struct {
+    weeks: []const WeekOf([4]Creneau),
+};
+
+pub const DayIndex = struct {
+    week: usize,
+    day: u8,
+};

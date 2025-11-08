@@ -2,6 +2,131 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const sh = @import("shared.zig");
 
+pub const Diagnostic = struct {
+    dayIndex: sh.DayIndex,
+    horaireIndex: sh.TimeIndex,
+    check: Check,
+};
+
+pub const Check = union(enum) {
+    missingProForEnfants: ChildrenCountCheck,
+    invalidPause: PauseCheck,
+    missingProAtReunion: MissingProAtReunion,
+    wrongAdaptationHoraire: WrongAdaptationHoraire,
+    notEnoughSleep: NotEnoughSleep,
+    wrongDepartArriveePro: WrongDepartArriveePro,
+    wrongRoulement: WrongRoulement,
+};
+
+//  `check` analyze les données fournies et s'assure notamment qu'il y a
+// suffisament de pros à tout moment de la journée.
+//
+// La liste renvoyée est vide si et seulement si aucun problème n'est détecté.
+fn check(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.ProsPlanning, roulements: ?sh.Roulements) ![]Diagnostic {
+    const normalizedChildren = buildChildrenCount(gpa, children);
+    const normalizedPros = buildProsCount(gpa, pros);
+    defer gpa.free(normalizedChildren);
+    defer gpa.free(normalizedPros);
+
+    var out = try std.ArrayList(Diagnostic).initCapacity(gpa, 0);
+
+    for (pros.weeks) |weekRaw| {
+        const weekI = weekRaw.week;
+        const week = normalizedPros[weekI];
+
+        const reunionRange = if (weekRaw.reunion) |reu| reu.range() else null;
+
+        for (week, 0..) |dayPros, dayI| {
+            const dayChildren = normalizedChildren[weekI][dayI];
+            const dayIndex = sh.DayIndex{ .week = weekI, .day = @intCast(dayI) };
+
+            const diag = checkChildrenCountDay(dayChildren, dayPros, reunionRange);
+            if (diag) |val| {
+                try out.append(gpa, .{ .dayIndex = dayIndex, .horaireIndex = val.horaire, .check = .{ .missingProForEnfants = val.check } });
+            }
+
+            // Arrivée et départ
+            const l = checkProsArrivals(&dayChildren, &dayPros);
+            for (l.buffer[0..l.len]) |c| {
+                try out.append(gpa, .{
+                    .dayIndex = dayIndex,
+                    .horaireIndex = sh.horaireToIndex(c.got),
+                    .check = .{ .wrongDepartArriveePro = c },
+                });
+            }
+        }
+    }
+
+    // Adaptation 2
+    for (children.children) |child| {
+        for (child.creneaux, 0..) |week, weekI| {
+            for (week, 0..) |maybeDay, dayI| {
+                const day = maybeDay orelse continue;
+                if (!day.isAdaptation) continue;
+
+                const c = checkAdaptationHoraires(day.horaires);
+                if (c) |val| {
+                    try out.append(gpa, .{
+                        .dayIndex = .{ .week = weekI, .day = @intCast(dayI) },
+                        .horaireIndex = sh.horaireToIndex(val.got.start),
+                        .check = .{ .wrongAdaptationHoraire = val },
+                    });
+                }
+            }
+        }
+    }
+
+    for (pros.weeks) |week| {
+        for (week.prosHoraires) |semainePro| {
+            // Pause 1, Pause2 et Pause3
+            for (semainePro.horaires, 0..) |day, dayI| {
+                const c = checkPauseDay(semainePro.pro, day);
+                if (c) |val| {
+                    try out.append(gpa, .{
+                        .dayIndex = .{ .week = week.week, .day = @intCast(dayI) },
+                        .horaireIndex = sh.horaireToIndex(day.pause.start),
+                        .check = .{ .invalidPause = val },
+                    });
+                }
+            }
+
+            // Repos
+            const l = checkRepos(semainePro);
+            for (l.buffer[0..l.len]) |c| {
+                try out.append(gpa, .{
+                    .dayIndex = .{ .week = week.week, .day = c.dayIndex },
+                    .horaireIndex = sh.horaireToIndex(semainePro.horaires[c.dayIndex].presence.end),
+                    .check = .{ .notEnoughSleep = c },
+                });
+            }
+        }
+
+        // Reunion 1
+        const lReunion = checkReunion(week);
+        if (lReunion) |val| {
+            try out.append(gpa, .{
+                .dayIndex = .{ .week = week.week, .day = val.day },
+                .horaireIndex = val.horaireIndex,
+                .check = .{ .missingProAtReunion = val },
+            });
+        }
+
+        // Optionnal roulement check
+        if (roulements) |val| {
+            const lRoulements = checkRoulements(week, val);
+            for (lRoulements.buffer[0..lRoulements.len]) |c| {
+                try out.append(gpa, .{
+                    .dayIndex = .{ .week = week.week, .day = c.dayIndex },
+                    .horaireIndex = 0,
+                    .check = .{ .wrongRoulement = c },
+                });
+            }
+        }
+    }
+
+    return try out.toOwnedSlice(gpa);
+}
+
 pub const ChildrenCount = struct {
     adaptionCount: u16 = 0,
     marcheurCount: u16 = 0,
@@ -17,16 +142,14 @@ pub const ChildrenCountDay = [sh.TimeGridLength]ChildrenCount;
 
 pub fn buildChildrenCount(gpa: Allocator, input: sh.ChildrenPlanning) []sh.WeekOf(ChildrenCountDay) {
     var out = gpa.alloc(sh.WeekOf(ChildrenCountDay), input.weekCount) catch unreachable;
-    for (out, 0..) |_, i| { // init with 0
-        out[i] = @splat(@splat(ChildrenCount{}));
-    }
+    @memset(out, @splat(@splat(ChildrenCount{})));
 
     for (input.children) |child| {
         for (child.creneaux, 0..) |week, weekI| {
             for (week, 0..) |maybeDay, dayI| {
                 const day = maybeDay orelse continue;
                 const currentDay = &out[weekI][dayI];
-                const bounds = sh.rangeToBounds(day.horaires);
+                const bounds = day.horaires.bounds();
                 for (bounds[0]..bounds[1]) |index| {
                     if (day.isAdaptation) {
                         currentDay[index].adaptionCount += 1;
@@ -115,18 +238,18 @@ pub fn buildProsCountDay(
 ) ProsCountDay {
     var currentDay: ProsCountDay = [_]u8{0} ** sh.TimeGridLength;
     for (horaires) |proHoraires| {
-        const pauseBounds = sh.rangeToBounds(proHoraires.pause);
-        const presenceBounds = sh.rangeToBounds(proHoraires.presence);
+        const pauseBounds = proHoraires.pause.bounds();
+        const presenceBounds = proHoraires.presence.bounds();
         for (presenceBounds[0]..presenceBounds[1]) |index| {
             // gestion de la pause : 2 plages (attention au plages vides)
-            if (pauseBounds[0] <= index and index <= pauseBounds[1]) continue;
+            if (pauseBounds[0] <= index and index < pauseBounds[1]) continue;
             currentDay[index] += 1;
         }
     }
     // handle detachement
     for (detachements) |detachement| {
         if (detachement) |val| {
-            const bounds = sh.rangeToBounds(val.horaires);
+            const bounds = val.horaires.bounds();
             for (bounds[0]..bounds[1]) |index| {
                 currentDay[index] -= 1;
             }
@@ -159,6 +282,103 @@ test "buildProsCountDay" {
     const c2 = buildProsCountDay(horaires[0..2], detachements[0..2]);
     try std.testing.expect(c2.len == sh.TimeGridLength);
     try std.testing.expect(c2[0] == 0 and c2[sh.horaireToIndex(ho(8, 30))] == 2);
+}
+
+// do not include interimaires
+fn buildProsCount(gpa: Allocator, input: sh.ProsPlanning) []sh.WeekOf(ProsCountDay) {
+    var out = gpa.alloc(sh.WeekOf(ProsCountDay), input.weekCount()) catch unreachable;
+    @memset(out, @splat(@splat(0)));
+
+    for (input.weeks) |semaine| {
+        const weekI = semaine.week;
+
+        var tmp = std.ArrayList(sh.WeekPro).initCapacity(gpa, semaine.prosHoraires.len) catch unreachable;
+        // filter "interim" profile
+        for (semaine.prosHoraires) |pro| {
+            if (pro.pro.isInterimaire) continue;
+            tmp.appendAssumeCapacity(pro);
+        }
+        const withoutInterim = tmp.items;
+        var horaires = gpa.alloc(sh.HoraireTravail, withoutInterim.len) catch unreachable;
+        var detachements = gpa.alloc(?sh.Detachement, withoutInterim.len) catch unreachable;
+
+        for (0..5) |dayI| {
+            // select by day
+            for (withoutInterim, 0..) |pro, i| {
+                horaires[i] = pro.horaires[dayI];
+                detachements[i] = null;
+                if (pro.detachement) |det| {
+                    if (det.dayIndex == dayI) {
+                        detachements[i] = pro.detachement;
+                    }
+                }
+            }
+            out[weekI][dayI] = buildProsCountDay(horaires, detachements);
+        }
+
+        gpa.free(horaires);
+        gpa.free(detachements);
+        tmp.deinit(gpa);
+    }
+
+    return out;
+}
+
+test "buildProsCount" {
+    const grid = buildProsCount(std.testing.allocator, .{
+        .weeks = &.{
+            .{
+                .week = 1,
+                .roulement = 0,
+                .prosHoraires = &.{
+                    .{
+                        .pro = pr("Audrey"),
+                        .horaires = .{
+                            .{ .presence = r(ho(6, 0), ho(12, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(12, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(12, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(12, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(12, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                        },
+                        .detachement = .{
+                            .dayIndex = 4,
+                            .horaires = r(ho(11, 0), ho(11, 15)),
+                        },
+                    },
+                    .{
+                        .pro = pr("Gégé"),
+                        .horaires = .{
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                        },
+                    },
+                    .{
+                        .pro = .{ .prenom = "", .color = "", .isInterimaire = true },
+                        .horaires = .{
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                            .{ .presence = r(ho(6, 0), ho(18, 0)), .pause = r(ho(10, 30), ho(11, 0)) },
+                        },
+                    },
+                },
+            },
+        },
+    });
+    defer std.testing.allocator.free(grid);
+
+    const monday = grid[1][0];
+    try std.testing.expectEqual(2, monday[0]);
+    try std.testing.expectEqual(0, monday[sh.horaireToIndex(ho(10, 30))]);
+    try std.testing.expectEqual(1, monday[sh.horaireToIndex(ho(13, 30))]);
+    try std.testing.expectEqual(0, monday[sh.horaireToIndex(ho(18, 0))]);
+    const friday = grid[1][4]; // détachement
+    try std.testing.expectEqual(1, friday[sh.horaireToIndex(ho(11, 0))]);
+    try std.testing.expectEqual(2, friday[sh.horaireToIndex(ho(11, 15))]);
 }
 
 const ChildrenCountCheck = struct {
@@ -262,8 +482,8 @@ pub fn checkChildrenCountDay(dayChildren: ChildrenCountDay, dayPros: ProsCountDa
             }
         }
         const pros = dayPros[timeI];
-        const check = checkChildrenCount(count, pros);
-        if (check) |value| {
+        const err = checkChildrenCount(count, pros);
+        if (err) |value| {
             // only include one check by day
             return .{
                 .horaire = timeI,
@@ -640,6 +860,7 @@ test "check pros arrivals" {
     try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0 }).len == 3);
     try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0 }).len == 3);
     try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0 }).len == 4);
+
     const diags = checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0 });
     try std.testing.expect(diags.len == 4);
     // check the depart horaire is correct
@@ -812,8 +1033,8 @@ fn FixedBuffer(comptime T: type, comptime N: u8) type {
 
         const Self = @This();
 
-        fn push(self: *Self, check: T) void {
-            self.buffer[self.len] = check;
+        fn push(self: *Self, v: T) void {
+            self.buffer[self.len] = v;
             self.len += 1;
         }
     };
@@ -844,6 +1065,9 @@ fn checkReposNight(pro: sh.Pro, dayIndex: u8, day: sh.Range, following: sh.Range
         return null;
     }
     const expectedRepos = 11; // heures
+    if (day.end.heure + expectedRepos < 24) { // full of time !
+        return null;
+    }
     const lendemain = sh.Horaire{
         .heure = (day.end.heure + expectedRepos - 24),
         .minute = day.end.minute,
@@ -876,12 +1100,12 @@ test "check repos" {
 
 // returns a shallow copy of `pros`, ordered according to
 // ouverture matin soir fermeture
-fn byPosition(comptime T: type, pros: [4]T, positions: [4]sh.Position) [4]T {
+fn byPosition(comptime T: type, pros: [4]T, positions: [4]sh.Creneau) [4]T {
     return .{
-        pros[std.mem.indexOfScalar(sh.Position, &positions, sh.Position.o) orelse 0],
-        pros[std.mem.indexOfScalar(sh.Position, &positions, sh.Position.m) orelse 0],
-        pros[std.mem.indexOfScalar(sh.Position, &positions, sh.Position.s) orelse 0],
-        pros[std.mem.indexOfScalar(sh.Position, &positions, sh.Position.f) orelse 0],
+        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.o) orelse 0],
+        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.m) orelse 0],
+        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.s) orelse 0],
+        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.f) orelse 0],
     };
 }
 
@@ -897,7 +1121,7 @@ fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck 
     if (week.prosHoraires.len < 4) return RoulementCheck{}; // dont bother to guess
 
     const pros = week.prosHoraires[0..4];
-    const expectedRoulement = roulements[week.roulement];
+    const expectedRoulement = roulements.weeks[week.roulement];
 
     const proIndex = struct {
         presence: sh.Range,
@@ -954,7 +1178,7 @@ fn hFromA(h: u8, m: u8) sh.HoraireTravail {
 }
 
 test "check roulements" {
-    const roulements0: sh.Roulements = &.{
+    const roulements0: sh.Roulements = .{ .weeks = &.{
         .{
             .{ .o, .m, .s, .f },
             .{ .o, .m, .s, .f },
@@ -962,7 +1186,7 @@ test "check roulements" {
             .{ .o, .m, .s, .f },
             .{ .o, .m, .s, .f },
         },
-    };
+    } };
     const week0 = sh.WeekPros{
         .week = 0,
         .roulement = 0,
@@ -1012,7 +1236,7 @@ test "check roulements" {
     const diagsOK = checkRoulements(week0, roulements0);
     try std.testing.expect(diagsOK.len == 0);
 
-    const roulements1: sh.Roulements = &.{
+    const roulements1: sh.Roulements = .{ .weeks = &.{
         .{
             .{ .m, .o, .s, .f },
             .{ .o, .m, .s, .f },
@@ -1020,7 +1244,7 @@ test "check roulements" {
             .{ .s, .m, .o, .f },
             .{ .o, .m, .s, .f },
         },
-    };
+    } };
     const week1 = sh.WeekPros{
         .week = 0,
         .roulement = 0,
@@ -1070,4 +1294,54 @@ test "check roulements" {
 
     const diagsErr = checkRoulements(week1, roulements1);
     try std.testing.expect(diagsErr.len == 2);
+}
+
+test "check sample 0" {
+    const gpa = std.testing.allocator;
+
+    const fileC = try std.fs.cwd().readFileAlloc(gpa, "testdata/children_0.json", std.math.maxInt(usize));
+    defer gpa.free(fileC);
+    const parsedC = try std.json.parseFromSlice(sh.ChildrenPlanning, gpa, fileC, .{ .ignore_unknown_fields = true });
+    defer parsedC.deinit();
+
+    const fileP = try std.fs.cwd().readFileAlloc(gpa, "testdata/pros_0.json", std.math.maxInt(usize));
+    defer gpa.free(fileP);
+    const parsedP = try std.json.parseFromSlice(sh.ProsPlanning, gpa, fileP, .{ .ignore_unknown_fields = true });
+    defer parsedP.deinit();
+
+    const children: sh.ChildrenPlanning = parsedC.value;
+    const pros: sh.ProsPlanning = parsedP.value;
+
+    try std.testing.expectEqual(12, children.children.len);
+    try std.testing.expectEqual(4, pros.weeks.len);
+
+    const diags = try check(gpa, children, pros, null);
+    defer gpa.free(diags);
+
+    try std.testing.expectEqual(36, diags.len);
+}
+
+test "check sample 1" {
+    const gpa = std.testing.allocator;
+
+    const fileC = try std.fs.cwd().readFileAlloc(gpa, "testdata/children_1.json", std.math.maxInt(usize));
+    defer gpa.free(fileC);
+    const parsedC = try std.json.parseFromSlice(sh.ChildrenPlanning, gpa, fileC, .{ .ignore_unknown_fields = true });
+    defer parsedC.deinit();
+
+    const fileP = try std.fs.cwd().readFileAlloc(gpa, "testdata/pros_1.json", std.math.maxInt(usize));
+    defer gpa.free(fileP);
+    const parsedP = try std.json.parseFromSlice(sh.ProsPlanning, gpa, fileP, .{ .ignore_unknown_fields = true });
+    defer parsedP.deinit();
+
+    const children: sh.ChildrenPlanning = parsedC.value;
+    const pros: sh.ProsPlanning = parsedP.value;
+
+    try std.testing.expectEqual(13, children.children.len);
+    try std.testing.expectEqual(5, pros.weeks.len);
+
+    const diags = try check(gpa, children, pros, null);
+    defer gpa.free(diags);
+
+    try std.testing.expectEqual(32, diags.len);
 }

@@ -9,6 +9,7 @@ pub fn main() !void {
     const alloc = arena.allocator();
 
     _ = create.generateDayHoraires(alloc, @splat(check.ChildrenCount{}));
+
     // Prints to stderr, ignoring potential errors.
     std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
     try impl.bufferedPrint();

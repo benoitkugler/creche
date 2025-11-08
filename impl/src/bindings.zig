@@ -1,5 +1,6 @@
 const std = @import("std");
 const sh = @import("shared.zig");
+const check = @import("check.zig");
 const Allocator = std.mem.Allocator;
 
 fn typescriptTypeName(gpa: Allocator, comptime T: type) []const u8 {
@@ -42,16 +43,18 @@ fn typescriptTypeName(gpa: Allocator, comptime T: type) []const u8 {
             // return "any";
             const name = @typeName(T);
             // remove prefix
-            return std.mem.trimStart(u8, name, "shared.");
+            const v = std.mem.trimStart(u8, name, "shared.");
+            return std.mem.trimStart(u8, v, "check.");
         },
     }
 }
 
 fn generateStruct(gpa: Allocator, comptime T: type, generated: *std.StringHashMap(void), dst: *std.Io.Writer) !void {
+    const info = @typeInfo(T).@"struct";
     var childBuffer = std.Io.Writer.Allocating.init(gpa);
 
     try dst.print("export type {s} = {{\n", .{typescriptTypeName(gpa, T)});
-    inline for (@typeInfo(T).@"struct".fields) |value| {
+    inline for (info.fields) |value| {
         try dst.print("\t{s}: {s};\n", .{ value.name, typescriptTypeName(gpa, value.type) });
         // recurse
         try generateType(gpa, value.type, generated, &childBuffer.writer);
@@ -60,6 +63,18 @@ fn generateStruct(gpa: Allocator, comptime T: type, generated: *std.StringHashMa
 
     // copy children
     try dst.writeAll(childBuffer.written());
+}
+
+fn generateEnum(gpa: Allocator, comptime T: type, dst: *std.Io.Writer) !void {
+    const info = @typeInfo(T).@"enum";
+    const typeName = typescriptTypeName(gpa, T);
+
+    try dst.print("export const {s} = {{\n", .{typeName});
+    inline for (info.fields) |field| {
+        try dst.print("\t{s}: {d},\n", .{ field.name, field.value });
+    }
+    try dst.print("}} as const \n", .{});
+    try dst.print("export type {s} = (typeof {s})[keyof typeof {s}]\n\n", .{ typeName, typeName, typeName });
 }
 
 fn generateType(gpa: Allocator, comptime T: type, generated: *std.StringHashMap(void), dst: *std.Io.Writer) !void {
@@ -71,6 +86,9 @@ fn generateType(gpa: Allocator, comptime T: type, generated: *std.StringHashMap(
     switch (@typeInfo(T)) {
         .int => {
             try dst.print("type int = number;\n\n", .{});
+        },
+        .@"enum" => {
+            try generateEnum(gpa, T, dst);
         },
         .@"struct" => {
             try generateStruct(gpa, T, generated, dst);
@@ -105,6 +123,7 @@ pub fn main() !void {
     try generateType(gpa, sh.ChildrenPlanning, &generated, &dst.writer);
     try generateType(gpa, sh.WeekPros, &generated, &dst.writer);
     try generateType(gpa, sh.Roulements, &generated, &dst.writer);
+    try generateType(gpa, check.Diagnostic, &generated, &dst.writer);
 
     try std.fs.cwd().writeFile(.{ .sub_path = "../src/logic/types.ts", .data = dst.written() });
 
