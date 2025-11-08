@@ -205,7 +205,6 @@ export function check(
     if (weekRaw.reunion) {
       reunionRange = Pros.reunionHoraires(weekRaw.reunion.horaire);
     }
-    weekRaw.reunion?.horaire;
     week.forEach((dayPros, dayI) => {
       const dayChildren = normalizedChildren[weekI][dayI];
       const dayIndex = { week: weekI, day: dayI };
@@ -653,6 +652,7 @@ export function _checkProsArrivals(children: ChildrenCount[], pros: int[]) {
 
   // last go
   const indexLastPro = pros.findLastIndex((p) => p != 0);
+
   if (expected.lastGo != indexLastPro) {
     // the index here are the last PRESENCE, so the
     // depart is actually the next (hence the +1 in the returned value)

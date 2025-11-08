@@ -29,12 +29,6 @@ test("select horaires", async () => {
     "src/logic/sample_enfants_redacted_0.json"
   );
 
-  //   const s = JSON.stringify({
-  //     ...planningChildren,
-  //     weekCount: Children.semaineCount(planningChildren),
-  //   });
-  //   Bun.write("impl/testdata/children_0.json", s);
-
   //   const norm1 = normalizeChildren(planningChildren);
   //   const props1 = _selectDayHoraires(norm1[0][3]);
   //   expect(props1).not.toHaveLength(0);
