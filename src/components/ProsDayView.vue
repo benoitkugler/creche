@@ -32,10 +32,10 @@
 </template>
 
 <script lang="ts" setup>
-import { TimeGrid } from "@/logic/check";
-import type { HoraireTravail, Pro } from "@/logic/pros";
 import ProsDayProColumn from "./ProsDayProColumn.vue";
 import { computed } from "vue";
+import type { HoraireTravail, Pro } from "@/logic/types";
+import { TimeGrid } from "@/logic/shared";
 
 const props = defineProps<{
   pros: { pro: Pro; horaires: HoraireTravail }[];

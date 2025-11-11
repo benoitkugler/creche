@@ -108,8 +108,8 @@
             </v-list-item>
             <v-list-item
               v-for="(diagnostic, index) in props.diagnostics"
-              :title="kindLabels[diagnostic.check.kind]"
-              :subtitle="formatCheck(diagnostic.check)"
+              :title="diagnostic.message.title"
+              :subtitle="diagnostic.message.message"
               :value="index"
               @click="selectedDiagnosticIndex = index"
               rounded
@@ -120,7 +120,7 @@
                     computeDate(
                       props.firstMonday,
                       diagnostic.dayIndex,
-                      TimeGrid.indexToHoraire(diagnostic.horaireIndex)
+                      diagnostic.horaire
                     ).toLocaleString("fr", {
                       weekday: "short",
                       day: "2-digit",
@@ -169,32 +169,27 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  type Detachement,
-  type HoraireTravail,
-  type PlanningProsSemaine,
-} from "@/logic/pros";
 import ProsDayView from "./ProsDayView.vue";
-import { computeDate, formatHoraire, type int } from "@/logic/shared";
-import {
-  formatCheck,
-  RulesDescription,
-  TimeGrid,
-  type Diagnostic,
-} from "@/logic/check";
+import { computeDate, formatHoraire, TimeGrid, type int } from "@/logic/shared";
 import { computed, ref } from "vue";
 import ProsDayHorairesEdit from "./ProsDayHorairesEdit.vue";
 import ProsSemaineSettingsEdit from "./ProsSemaineSettingsEdit.vue";
+import type {
+  Detachement,
+  Diagnostic,
+  HoraireTravail,
+  WeekPros,
+} from "@/logic/types";
 
 const props = defineProps<{
   firstMonday: Date;
-  planning: PlanningProsSemaine;
+  planning: WeekPros;
   diagnostics: Diagnostic[]; // restricted to the week
 }>();
 
 const emit = defineEmits<{
   (e: "editHoraires", dayIndex: int, horaires: HoraireTravail[]): void;
-  (e: "editDetachements", detachements: (Detachement | undefined)[]): void;
+  (e: "editDetachements", detachements: (Detachement | null)[]): void;
 }>();
 
 function byDay(day: int) {
@@ -210,22 +205,59 @@ const selectedDiagnostic = computed(() =>
     ? null
     : props.diagnostics[selectedDiagnosticIndex.value]
 );
-const kindLabels = [
-  "Adaptation",
-  "Nombre d'enfants",
-  "Réunion hebdomadaire",
-  "Temps de repos",
-  "Pause manquante",
-  "Durée de la pause",
-  "Horaires de la pause",
-  "Départ ou arrivée d'une pro.",
-  "Horaires d'une adaptation",
-  "Roulement",
-] as const;
 
 const dayToEdit = ref<int | null>(null);
 
 const showEditCreneaux = ref(false);
+
+/** This user-friendly list documents the various checks implemented by check.zig */
+const RulesDescription = [
+  [
+    "Enfants 1",
+    "Une pro seule doit avoir au maximum 3 enfants (marcheurs ou non).",
+  ],
+  [
+    "Enfants 2",
+    "A partir de deux pros, le maximum d’enfants par pro est 5 non-marcheurs ou 8 marcheurs. Un enfant marcheur peut compléter un groupe de non-marcheurs.",
+  ],
+  [
+    "Détachement",
+    "Une pro marquée en détachement ne peut pas s’occuper d’enfants.",
+  ],
+  [
+    "Arrivée",
+    "La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.",
+  ],
+  [
+    "Départ",
+    "L’avant-dernière pro doit partir 15 min après le 4° enfant restant, la dernière pro 30 min après le dernier enfant. ",
+  ],
+  ["Adaptation 1", "Une adaptation occupe une pro à part entière."],
+  ["Adaptation 2", "Une adaptation doit se produire entre 9h et 17h."],
+  [
+    "Pause 1",
+    "Chaque pro doit avoir entre 30 min et 1h de pause, à partir de 6h de travail.",
+  ],
+  [
+    "Pause 2",
+    "Pour strictement moins de 6h de travail, si l’arrivée est entre 11h et 12h, une pro doit avoir une pause.",
+  ],
+  [
+    "Pause 3",
+    "Pour une amplitude de 8h30 (ou plus), la pause est de 1h; pour 8h15, la pause est de 45min.",
+  ],
+  ["Pause 4", "Aucune pause entre 11h30 et 12h30 (à cause des repas)."],
+  [
+    "Réunion 1",
+    "Toutes les pro (sauf congé) doivent être présentes sur le créneau de réunion hebdomadaire.",
+  ],
+  ["Réunion 2", "Sur ce créneau, les enfants sont considérés comme gardés."],
+
+  [
+    "Repos",
+    "Il doit y avoir au moins 11h de repos entre la fin d’un service et le début du prochain.",
+  ],
+] as const;
 </script>
 
 <style></style>

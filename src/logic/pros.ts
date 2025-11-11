@@ -1,33 +1,30 @@
 import {
+  emptyRange,
   isError,
   newError,
   parseHoraire,
-  Range,
+  parseRange,
+  rangeIncludes,
   readExcelFile,
   type Cell,
   type CellValue,
   type error,
-  type Heure,
-  type Horaire,
   type int,
-  type SemaineOf,
 } from "./shared";
-
-export type Pro = {
-  prenom: string;
-  color: string; // "#HEX"
-  isInterimaire: boolean;
-};
-
-export type HoraireTravail = {
-  presence: Range;
-  pause: Range;
-};
+import type {
+  WeekPro,
+  WeekPros,
+  HoraireTravail,
+  Reunion,
+  Pro,
+  Range,
+  ProsPlanning,
+} from "./types";
 
 export function emptyHoraireTravail(): HoraireTravail {
   return {
-    presence: Range.empty(),
-    pause: Range.empty(),
+    presence: emptyRange(),
+    pause: emptyRange(),
   };
 }
 
@@ -35,111 +32,73 @@ export function formatHoraireTravail(h: HoraireTravail) {
   return `${h.presence.toString()} (pause: ${h.pause.toString()})`;
 }
 
-export type Detachement = { dayIndex: int; horaires: Range };
+export async function parseExcelPros(
+  file: Blob,
+  firstMonday: Date
+): Promise<ProsPlanning | error> {
+  const rows = await readExcelFile(file);
 
-export type SemainePro = {
-  pro: Pro;
-  horaires: SemaineOf<HoraireTravail>;
-  detachement?: Detachement;
-};
+  const out: ProsPlanning = { firstMonday, weeks: [] };
+  let currentWeek: WeekPros = {
+    week: -1,
+    prosHoraires: [],
+    roulement: -1,
+    reunion: null,
+  };
 
-export type Reunion = {
-  day: int;
-  horaire: Horaire; // la durée est toujours d'une heure
-};
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index];
+    if (!row.length) continue;
 
-export type PlanningProsSemaine = {
-  week: int; // index (0 based) par rapport au tableau des enfants
-  prosHoraires: SemainePro[]; // pour chaque pro
-  roulement: int; // index 0-based (entre 0 et 3) du roulement pour cette semaine
-  reunion?: Reunion;
-};
+    // check for Reunion row
+    const reunion = isReunionRow(row);
+    if (isError(reunion)) return reunion;
+    if (reunion != null && currentWeek.week != -1) {
+      currentWeek.reunion = reunion;
+      continue;
+    }
 
-export type PlanningPros = {
-  firstMonday: Date; // convenience field, copied from enfants
-  weeks: PlanningProsSemaine[];
-};
+    // detect a week start
+    const firstCell = row[0].value;
+    if (typeof firstCell != "string") continue;
+    if (firstCell.toLowerCase().includes("semaine")) {
+      const weekHeader = parseSemaine(firstCell, firstMonday);
+      if (isError(weekHeader)) return weekHeader;
 
-export namespace Pros {
-  /** returns the maximum semaine + 1 */
-  export function semaineCount(input: PlanningPros) {
-    return Math.max(...input.weeks.map((e) => e.week)) + 1;
-  }
-
-  export async function parseExcelPros(
-    file: Blob,
-    firstMonday: Date
-  ): Promise<PlanningPros | error> {
-    const rows = await readExcelFile(file);
-
-    const out: PlanningPros = { firstMonday, weeks: [] };
-    let currentWeek: PlanningProsSemaine = {
-      week: -1,
-      prosHoraires: [],
-      roulement: -1,
-    };
-
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-      if (!row.length) continue;
-
-      // check for Reunion row
-      const reunion = isReunionRow(row);
-      if (isError(reunion)) return reunion;
-      if (reunion != null && currentWeek.week != -1) {
-        currentWeek.reunion = reunion;
+      // ignore previous weeks
+      if (weekHeader.week < 0) {
         continue;
       }
 
-      // detect a week start
-      const firstCell = row[0].value;
-      if (typeof firstCell != "string") continue;
-      if (firstCell.toLowerCase().includes("semaine")) {
-        const weekHeader = parseSemaine(firstCell, firstMonday);
-        if (isError(weekHeader)) return weekHeader;
-
-        // ignore previous weeks
-        if (weekHeader.week < 0) {
-          continue;
-        }
-
-        // flush the current week if any
-        if (currentWeek.week != -1) {
-          out.weeks.push(currentWeek);
-        }
-        currentWeek = {
-          week: weekHeader.week,
-          roulement: weekHeader.roulement,
-          prosHoraires: [],
-        }; // start a new week
-      } else if (firstCell.trim().length != 0 && currentWeek.week != -1) {
-        // this is a pro !
-        // fetch the next line
-        index += 1;
-        if (index >= rows.length)
-          return newError("Ligne de pauses manquantes.");
-        const res = parseHorairesPros(row, rows[index]);
-        if (isError(res)) return newError(`Ligne ${index + 1} : ${res.err}`);
-        currentWeek.prosHoraires.push(res);
-        // always skip next line to avoid errors
-        index += 1;
+      // flush the current week if any
+      if (currentWeek.week != -1) {
+        out.weeks.push(currentWeek);
       }
+      currentWeek = {
+        week: weekHeader.week,
+        roulement: weekHeader.roulement,
+        prosHoraires: [],
+        reunion: null,
+      }; // start a new week
+    } else if (firstCell.trim().length != 0 && currentWeek.week != -1) {
+      // this is a pro !
+      // fetch the next line
+      index += 1;
+      if (index >= rows.length) return newError("Ligne de pauses manquantes.");
+      const res = parseHorairesPros(row, rows[index]);
+      if (isError(res)) return newError(`Ligne ${index + 1} : ${res.err}`);
+      currentWeek.prosHoraires.push(res);
+      // always skip next line to avoid errors
+      index += 1;
     }
-
-    // flush the last week if any
-    if (currentWeek.prosHoraires.length != 0) {
-      out.weeks.push(currentWeek);
-    }
-
-    return out;
   }
 
-  export function reunionHoraires(debut: Horaire) {
-    return new Range(debut, {
-      heure: (debut.heure + 1) as Heure,
-      minute: debut.minute,
-    });
+  // flush the last week if any
+  if (currentWeek.prosHoraires.length != 0) {
+    out.weeks.push(currentWeek);
   }
+
+  return out;
 }
 
 function parseSemaine(
@@ -175,7 +134,7 @@ function parseSemaine(
 function parseHorairesPros(
   rowPresences: Cell[],
   rowPauses: Cell[]
-): SemainePro | error {
+): WeekPro | error {
   if (rowPresences.length < 15 || rowPauses.length < 15) {
     return newError("Ligne trop courte.");
   }
@@ -222,6 +181,7 @@ function parseHorairesPros(
   return {
     pro,
     horaires: [d1, d2, d3, d4, d5],
+    detachement: null,
   };
 }
 
@@ -237,7 +197,7 @@ function parseHorairesDay(
   if (isError(pauseI)) return pauseI;
 
   // check inclusion
-  if (!presenceI.includes(pauseI)) {
+  if (!rangeIncludes(presenceI, pauseI)) {
     return newError("Pause non comprise dans les horaires de travail.");
   }
   return { presence: presenceI, pause: pauseI };
@@ -254,13 +214,13 @@ function parseRangeOrEmpty(
     cellEnd = cellEnd.toISOString().slice(11, 16);
   }
   if (typeof cellStart != "string" || cellStart.length == 0) {
-    return Range.empty();
+    return emptyRange();
   }
   if (typeof cellEnd != "string" || cellEnd.length == 0) {
-    return Range.empty();
+    return emptyRange();
   }
   const range = `${cellStart} ${cellEnd}`;
-  return Range.parse(range);
+  return parseRange(range);
 }
 
 function isReunionRow(row: Cell[]): Reunion | error | null {

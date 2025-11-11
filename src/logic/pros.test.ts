@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
-import { Pros, type PlanningPros } from "./pros";
-import { formatHoraire, isError, Range } from "./shared";
+import { isError } from "./shared";
+import { parseExcelPros } from "./pros";
 
 test("parse personnel 0", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
 
-  const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 1));
+  const planning = await parseExcelPros(file, new Date(2025, 8, 1));
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
 
@@ -22,18 +22,22 @@ test("parse personnel 0", async () => {
   expect(s1.prosHoraires).toHaveLength(5);
   const pro1 = s1.prosHoraires[0];
   expect(pro1.pro.prenom).toBe("Ilona R.");
-  expect(pro1.horaires[0].presence).toEqual(
-    new Range({ heure: 11, minute: 0 }, { heure: 20, minute: 0 })
-  );
-  expect(pro1.horaires[0].pause).toEqual(
-    new Range({ heure: 14, minute: 0 }, { heure: 15, minute: 0 })
-  );
-  expect(pro1.horaires[1].presence).toEqual(
-    new Range({ heure: 9, minute: 30 }, { heure: 16, minute: 30 })
-  );
-  expect(pro1.horaires[1].pause).toEqual(
-    new Range({ heure: 13, minute: 0 }, { heure: 13, minute: 45 })
-  );
+  expect(pro1.horaires[0].presence).toEqual({
+    start: { heure: 11, minute: 0 },
+    end: { heure: 20, minute: 0 },
+  });
+  expect(pro1.horaires[0].pause).toEqual({
+    start: { heure: 14, minute: 0 },
+    end: { heure: 15, minute: 0 },
+  });
+  expect(pro1.horaires[1].presence).toEqual({
+    start: { heure: 9, minute: 30 },
+    end: { heure: 16, minute: 30 },
+  });
+  expect(pro1.horaires[1].pause).toEqual({
+    start: { heure: 13, minute: 0 },
+    end: { heure: 13, minute: 45 },
+  });
   expect(s2.prosHoraires).toHaveLength(5);
 
   const pro5 = s1.prosHoraires[4];
@@ -44,21 +48,21 @@ test("parse personnel 0", async () => {
   expect(pro2.pro.color).toBe("#B3C6E6");
 
   // reunions
-  expect(s1.reunion).toBeUndefined();
+  expect(s1.reunion).toBeNull();
   expect(s2.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
   expect(s3.reunion).toEqual({ day: 1, horaire: { heure: 13, minute: 30 } });
 });
 
 test("parse personnel 1", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_1.xlsx");
-  const planning = await Pros.parseExcelPros(file, new Date(2025, 8, 29));
+  const planning = await parseExcelPros(file, new Date(2025, 8, 29));
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
 });
 
 test("parse personnel 2", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_2.xlsx");
-  const planning = await Pros.parseExcelPros(file, new Date(2025, 10, 3));
+  const planning = await parseExcelPros(file, new Date(2025, 10, 3));
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
   expect(planning.weeks).toHaveLength(2);

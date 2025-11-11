@@ -60,7 +60,7 @@
                 ></HoraireField>
               </v-col>
               <v-col align-self="center" cols="auto">
-                <v-btn icon @click="inner[index] = undefined" size="small">
+                <v-btn icon @click="inner[index] = null" size="small">
                   <v-icon color="red">mdi-delete</v-icon>
                 </v-btn>
               </v-col>
@@ -69,7 +69,7 @@
               <v-col>
                 <v-btn
                   @click="
-                    inner[index] = { dayIndex: 0, horaires: Range.empty() }
+                    inner[index] = { dayIndex: 0, horaires: emptyRange() }
                   "
                   size="small"
                 >
@@ -94,22 +94,18 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  type Detachement,
-  type PlanningProsSemaine,
-  type SemainePro,
-} from "@/logic/pros";
-import { computeDate, copy, Range } from "@/logic/shared";
+import { computeDate, copy, emptyRange, rangeIncludes } from "@/logic/shared";
 import { computed, ref } from "vue";
 import HoraireField from "./HoraireField.vue";
+import type { Detachement, WeekPros } from "@/logic/types";
 
 const props = defineProps<{
   firstMonday: Date;
-  planning: PlanningProsSemaine;
+  planning: WeekPros;
 }>();
 
 const emit = defineEmits<{
-  (e: "save", detachements: (Detachement | undefined)[]): void;
+  (e: "save", detachements: (Detachement | null)[]): void;
 }>();
 
 const inner = ref(copy(props.planning.prosHoraires.map((p) => p.detachement)));
@@ -118,7 +114,8 @@ const isValid = computed(() =>
   props.planning.prosHoraires.every((pro, index) => {
     const detachement = inner.value[index];
     if (!detachement) return true;
-    return pro.horaires[detachement.dayIndex].presence.includes(
+    return rangeIncludes(
+      pro.horaires[detachement.dayIndex].presence,
       detachement.horaires
     );
   })

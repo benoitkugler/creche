@@ -1,23 +1,33 @@
-//! By convention, root.zig is the root source file when making a library.
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+const sh = @import("shared.zig");
+const api = @import("api.zig");
 
-pub fn bufferedPrint() !void {
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
-    const stdout = &stdout_writer.interface;
+// zig build-exe src/root.zig -target wasm32-freestanding -O ReleaseFast -fno-entry --export=checkPlanningJSON --export=alloc --export=free
+// mv root.wasm ../public/main_zig.wasm
+const SlicePtr = packed struct(u64) {
+    len: u32,
+    ptr: u32,
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    fn toInt(slice: []u8) u64 {
+        return @bitCast(SlicePtr{
+            .len = @intCast(slice.len),
+            .ptr = @intCast(@intFromPtr(slice.ptr)),
+        });
+    }
+};
 
-    try stdout.flush(); // Don't forget to flush!
+export fn alloc(len: usize) [*]u8 {
+    const slice = std.heap.wasm_allocator.alloc(u8, len) catch @panic("failed to allocate memory");
+    return slice.ptr;
 }
 
-pub fn add(a: i32, b: i32) i32 {
-    return a + b;
+export fn free(ptr: [*]u8, len: usize) void {
+    std.heap.wasm_allocator.free(ptr[0..len]);
 }
 
-test "basic add functionality" {
-    try std.testing.expect(add(3, 7) == 10);
+export fn checkPlanningJSON(jsonPtr: [*]u8, jsonLen: usize) u64 {
+    const gpa = std.heap.wasm_allocator;
+    const out = api.checkPlanning(gpa, jsonPtr, jsonLen) catch @panic("unexpected error in checkPlanning");
+    return SlicePtr.toInt(out);
 }

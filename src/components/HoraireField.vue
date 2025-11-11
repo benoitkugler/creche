@@ -32,9 +32,9 @@ import {
   formatHoraire,
   isHeure,
   type Heure,
-  type Horaire,
   type Minute,
 } from "@/logic/shared";
+import type { Horaire } from "@/logic/types";
 import { ref } from "vue";
 
 const props = defineProps<{

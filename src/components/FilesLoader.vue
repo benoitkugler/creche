@@ -55,25 +55,20 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import {
-  Children,
-  type PlanningChildren,
-  type TextBlock,
-} from "@/logic/children";
 import { isError } from "@/logic/shared";
-import { Pros, type PlanningPros } from "@/logic/pros";
-import { Roulement } from "@/logic/roulement";
-import { normalizeRoulements } from "@/logic/create";
-import type { RoulementsN } from "@/logic/check";
+import { parseExcelPros } from "@/logic/pros";
+import type { ChildrenPlanning, ProsPlanning, Roulements } from "@/logic/types";
+import { parseExcelRoulements } from "@/logic/roulement";
+import { Wasm } from "@/logic/wasm";
 
 const props = defineProps<{}>();
 
 const emit = defineEmits<{
   (
     e: "goNext",
-    children: PlanningChildren,
-    pros: PlanningPros,
-    roulements?: RoulementsN
+    children: ChildrenPlanning,
+    pros: ProsPlanning,
+    roulements: Roulements | null
   ): void;
 }>();
 
@@ -88,39 +83,27 @@ async function importFiles() {
   // Enfants
   const content = await fileChildren.value.arrayBuffer();
   const slice = new Uint8Array(content);
-  const pdfContent = window.readPDFFile(slice);
-  if (typeof pdfContent == "object") {
-    error.value = pdfContent.error;
-    return;
-  }
-
-  const textsContents: TextBlock[] = JSON.parse(pdfContent);
-  const res1 = Children.parsePDFEnfants(textsContents);
+  const res1 = Wasm.parseChildrenPDFFile(slice);
   if (isError(res1)) {
     error.value = res1.err;
     return;
   }
 
   // Pros
-  const res2 = await Pros.parseExcelPros(filePros.value, res1.firstMonday);
+  const res2 = await parseExcelPros(filePros.value, res1.firstMonday);
   if (isError(res2)) {
     error.value = res2.err;
     return;
   }
 
-  let roulements: RoulementsN | undefined = undefined;
+  let roulements: Roulements | null = null;
   if (roulementPros.value) {
-    const res3 = await Roulement.parseExcel(roulementPros.value);
+    const res3 = await parseExcelRoulements(roulementPros.value);
     if (isError(res3)) {
       error.value = res3.err;
       return;
     }
-    const normalized = normalizeRoulements(res3);
-    if (isError(normalized)) {
-      error.value = normalized.err;
-      return;
-    }
-    roulements = normalized.roulements;
+    roulements = res3.roulements;
   }
 
   emit("goNext", res1, res2, roulements);

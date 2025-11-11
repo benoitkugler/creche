@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>WebAssembly test</title>
+  </head>
+  <script type="module">
+    const result = await WebAssembly.instantiateStreaming(
+      fetch("root.wasm"),
+      {}
+    );
+    const { memory, alloc, free, checkPlanningJSON } = result.instance.exports;
+
+    const input =
+      '{"children":{"children":[],"weekCount":0},"pros":{"weeks":[]},"roulements":null}';
+    const encoded = new TextEncoder().encode(input);
+    console.log(encoded);
+    const offset = alloc(encoded.length);
+    console.log(offset);
+    const dst = new Uint8Array(memory.buffer, offset, encoded.length);
+    dst.set(encoded);
+    const sliceAsU64 = checkPlanningJSON(offset, encoded.length);
+    console.log(sliceAsU64);
+    const outPtr = Number(sliceAsU64 >> 32n);
+    const outLen = Number(sliceAsU64 & 0xffffffffn);
+    // do something with sliceAsU64
+    const outputView = new Uint8Array(memory.buffer, outPtr, outLen);
+    const output = new TextDecoder().decode(outputView);
+    // free memory
+    free(offset, encoded.length);
+    free(outPtr, outLen);
+    console.log(memory.buffer);
+    console.log(JSON.parse(output));
+  </script>
+  <body></body>
+</html>

@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { Roulement } from "./roulement";
 import { isError } from "./shared";
+import { _parseExcelRoulements, parseExcelRoulements } from "./roulement";
 
 test("read excel roulements", async () => {
   const file = Bun.file("src/logic/sample_roulements.xlsx");
-  const roulements = await Roulement.parseExcel(file);
+  const roulements = await _parseExcelRoulements(file);
   expect(isError(roulements)).toBeFalse();
   if (isError(roulements)) return;
 
@@ -20,4 +20,9 @@ test("read excel roulements", async () => {
     color: "#FFFF99",
     positions: ["s", "o", "o", "o", "s"],
   });
+
+  const normalized = await parseExcelRoulements(file);
+  expect(isError(normalized)).toBeFalse();
+  if (isError(normalized)) return;
+  expect(normalized.roulements.weeks).toHaveLength(4);
 });

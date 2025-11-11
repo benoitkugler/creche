@@ -1,11 +1,7 @@
 import Excel from "exceljs";
+import type { DayIndex, Horaire, Range } from "./types";
 
 export type int = number;
-
-export type Horaire = {
-  heure: Heure;
-  minute: Minute;
-};
 
 export function formatHoraire(h: Horaire) {
   return `${h.heure.toString().padStart(2, "0")}:${h.minute
@@ -15,81 +11,89 @@ export function formatHoraire(h: Horaire) {
 
 /** returns true if h1 <= h2 */
 export function isBefore(h1: Horaire, h2: Horaire) {
-  return compareHoraire(h1, h2) != 1;
+  return (
+    h1.heure < h2.heure || (h1.heure == h2.heure && h1.minute <= h2.minute)
+  );
 }
 
-export function compareHoraire(h1: Horaire, h2: Horaire) {
-  if (h1.heure < h2.heure) return -1;
-  if (h1.heure > h2.heure) return 1;
-  if (h1.minute < h2.minute) return -1;
-  if (h1.minute > h2.minute) return 1;
-  return 0;
+function range_isEmpty(r: Range) {
+  return isBefore(r.end, r.start);
 }
 
-export class Range {
-  constructor(public start: Horaire, public end: Horaire) {}
-
-  static empty() {
-    return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
-  }
-
-  static fromDuration(start: Horaire, duration: int) {
-    const endInMinutes = start.heure * 60 + start.minute + duration;
-    const endMinutes = (endInMinutes % 60) as Minute;
-    const endHour = ((endInMinutes - endMinutes) / 60) as Heure;
-    return new Range(start, { heure: endHour, minute: endMinutes });
-  }
-
-  // accept dd:dd dd:dd
-  static parse(cell: string): Range | error {
-    const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
-    const match = reHoraire.exec(cell);
-    if (match === null) {
-      return newError(`Format de plage d'horaires invalide : ${cell}`);
-    }
-    const debut = parseHoraire(match[1], match[2]);
-    if (isError(debut)) return debut;
-    const fin = parseHoraire(match[3], match[4]);
-    if (isError(fin)) return fin;
-
-    return new Range(debut, fin);
-  }
-
-  toString() {
-    return `${formatHoraire(this.start)} ${formatHoraire(this.end)}`;
-  }
-
-  isEmpty() {
-    return isBefore(this.end, this.start);
-  }
-
-  contains(horaire: Horaire) {
-    if (this.isEmpty()) return false;
-    return isBefore(this.start, horaire) && isBefore(horaire, this.end);
-  }
-
-  /** returns true if other is (fully) included in this range */
-  includes(other: Range) {
-    if (other.isEmpty()) return true;
-    return isBefore(this.start, other.start) && isBefore(other.end, this.end);
-  }
-
-  /** returns true is the intersection is non empty */
-  overlaps(other: Range) {
-    const intersection = new Range(
-      isBefore(this.start, other.start) ? other.start : this.start,
-      isBefore(this.end, other.end) ? this.end : other.end
-    );
-    return !intersection.isEmpty();
-  }
-
-  /** renvoie la durée en minutes */
-  duration(): int {
-    const debutM = this.start.heure * 60 + this.start.minute;
-    const finM = this.end.heure * 60 + this.end.minute;
-    return finM - debutM;
-  }
+/** returns true if other is (fully) included in this range */
+export function rangeIncludes(r: Range, other: Range): boolean {
+  if (range_isEmpty(other)) return true;
+  return isBefore(r.start, other.start) && isBefore(other.end, r.end);
 }
+
+export function emptyRange(): Range {
+  return { start: { heure: 0, minute: 0 }, end: { heure: 0, minute: 0 } };
+}
+
+// accept dd:dd dd:dd
+export function parseRange(cell: string): Range | error {
+  const reHoraire = /(\d+):(\d+)\s+(\d+):(\d+)/;
+  const match = reHoraire.exec(cell);
+  if (match === null) {
+    return newError(`Format de plage d'horaires invalide : ${cell}`);
+  }
+  const start = parseHoraire(match[1], match[2]);
+  if (isError(start)) return start;
+  const end = parseHoraire(match[3], match[4]);
+  if (isError(end)) return end;
+
+  return { start, end };
+}
+
+// export class Range {
+//   constructor(public start: Horaire, public end: Horaire) {}
+
+//   static empty() {
+//     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
+//   }
+
+//   static fromDuration(start: Horaire, duration: int) {
+//     const endInMinutes = start.heure * 60 + start.minute + duration;
+//     const endMinutes = (endInMinutes % 60) as Minute;
+//     const endHour = ((endInMinutes - endMinutes) / 60) as Heure;
+//     return new Range(start, { heure: endHour, minute: endMinutes });
+//   }
+
+//   toString() {
+//     return `${formatHoraire(this.start)} ${formatHoraire(this.end)}`;
+//   }
+
+//   isEmpty() {
+//     return isBefore(this.end, this.start);
+//   }
+
+//   contains(horaire: Horaire) {
+//     if (this.isEmpty()) return false;
+//     return isBefore(this.start, horaire) && isBefore(horaire, this.end);
+//   }
+
+//   /** returns true if other is (fully) included in this range */
+//   includes(other: Range) {
+//     if (other.isEmpty()) return true;
+//     return isBefore(this.start, other.start) && isBefore(other.end, this.end);
+//   }
+
+//   /** returns true is the intersection is non empty */
+//   overlaps(other: Range) {
+//     const intersection = new Range(
+//       isBefore(this.start, other.start) ? other.start : this.start,
+//       isBefore(this.end, other.end) ? this.end : other.end
+//     );
+//     return !intersection.isEmpty();
+//   }
+
+//   /** renvoie la durée en minutes */
+//   duration(): int {
+//     const debutM = this.start.heure * 60 + this.start.minute;
+//     const finM = this.end.heure * 60 + this.end.minute;
+//     return finM - debutM;
+//   }
+// }
 
 export function parseHoraire(hour: string, minute: string): Horaire | error {
   const h = isHeure(Number(hour));
@@ -136,9 +140,6 @@ export function isMinute(v: int): Minute | null {
   return null;
 }
 
-// du lundi au vendredi
-export type SemaineOf<T> = [T, T, T, T, T];
-
 export type error = { err: string; __is_error__: "error" };
 
 export function newError(err: string): error {
@@ -149,8 +150,6 @@ export function isError<T>(v: T | error): v is error {
   if (typeof v !== "object" || v === null) return false;
   return "__is_error__" in v;
 }
-
-export type DayIndex = { week: int; day: int };
 
 export function computeDate(
   firstMonday: Date,
@@ -163,14 +162,11 @@ export function computeDate(
   return d;
 }
 
+// parse Date objects
 function reviver<T>(_: string, v: T) {
-  // Range
-  if (typeof v == "object" && v != null && "__proto__" in v) {
-    if ("debut" in v && "fin" in v) {
-      return new Range(v.debut as Horaire, v.fin as Horaire);
-    }
-  }
   if (typeof v != "string") return v;
+  // only try to parse ISO string, not "plain" ones like 01/01/2000
+  if (v.length < 10 + 1 + 8) return v;
   const d = new Date(v);
   if (isNaN(d.getTime())) return v;
   return d;
@@ -226,4 +222,20 @@ export function arrayEquals<T>(a: T[], b: T[]) {
     if (a[i] !== b[i]) return false;
   }
   return true;
+}
+
+/** To simplify checks we normalize the creneaux to a regular 5-min spaced slice */
+export namespace TimeGrid {
+  /** 0-based index into the grid timeline , represents 5 min */
+  export type Index = int;
+
+  export const Length = 12 * (HeureMax - HeureMin);
+
+  export const heures = Array.from({ length: HeureMax - HeureMin }).map(
+    (_, i) => (HeureMin + i) as Heure
+  );
+
+  export function horaireToIndex(h: Horaire) {
+    return (h.heure - HeureMin) * 12 + h.minute / 5;
+  }
 }

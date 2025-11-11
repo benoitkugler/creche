@@ -5,10 +5,40 @@ const sh = @import("shared.zig");
 pub const Diagnostic = struct {
     dayIndex: sh.DayIndex,
     horaireIndex: sh.TimeIndex,
+    horaire: sh.Horaire,
+    message: Message,
+
+    const Message = struct {
+        title: sh.string,
+        message: sh.string,
+    };
+
+    fn deinit(self: *Diagnostic, gpa: Allocator) void {
+        gpa.free(self.message.message);
+    }
+
+    pub fn buildSlice(gpa: Allocator, checks: []const TimeCheck) ![]Diagnostic {
+        var out = try gpa.alloc(Diagnostic, checks.len);
+        for (checks, 0..) |ch, i| {
+            const message = try ch.check.format(gpa);
+            out[i] = .{
+                .dayIndex = ch.dayIndex,
+                .horaireIndex = ch.horaireIndex,
+                .horaire = sh.indexToHoraire(ch.horaireIndex),
+                .message = message,
+            };
+        }
+        return out;
+    }
+};
+
+const TimeCheck = struct {
+    dayIndex: sh.DayIndex,
+    horaireIndex: sh.TimeIndex,
     check: Check,
 };
 
-pub const Check = union(enum) {
+const Check = union(enum) {
     missingProForEnfants: ChildrenCountCheck,
     invalidPause: PauseCheck,
     missingProAtReunion: MissingProAtReunion,
@@ -16,19 +46,120 @@ pub const Check = union(enum) {
     notEnoughSleep: NotEnoughSleep,
     wrongDepartArriveePro: WrongDepartArriveePro,
     wrongRoulement: WrongRoulement,
+
+    fn format(self: Check, gpa: Allocator) !Diagnostic.Message {
+        var w = std.Io.Writer.Allocating.init(gpa);
+        defer w.deinit();
+        var title: sh.string = "";
+        switch (self) {
+            .missingProForEnfants => |val| {
+                title = "Nombre d'enfants";
+                try w.writer.print("Pro. manquante pour le nombre d'enfants (requises: {}, présentes: {}, adaptations: {}).", .{ val.expectedProsCount, val.gotProsCount, val.adaptationCount });
+            },
+            .invalidPause => |val| {
+                switch (val) {
+                    .missing => |pause| {
+                        title = "Pause manquante";
+                        try w.writer.print("Pause manquante pour {s}", .{pause.pro.prenom});
+                    },
+                    .wrongDuration => |pause| {
+                        title = "Durée de la pause";
+                        try w.writer.print("Durée de la pause ({} min.) invalide pour {s} ({s}).", .{ pause.got, pause.pro.prenom, pause.reason });
+                    },
+                    .wrongHoraire => |pause| {
+                        title = "Horaires de la pause";
+                        try w.writer.print(
+                            "Horaires de la pause invalides pour {s} (de {s} à {s}).",
+                            .{ pause.pro.prenom, pause.got.start.format(), pause.got.end.format() },
+                        );
+                    },
+                }
+            },
+            .missingProAtReunion => |val| {
+                title = "Réunion hebdomadaire";
+                try w.writer.print("Pro. manquante sur le créneau de réunion : {s}.", .{val.missing.prenom});
+            },
+            .notEnoughSleep => |val| {
+                title = "Temps de repos";
+                try w.writer.print(
+                    "Temps de repos insuffisant pour {s} : reprise le lendemain à {s} au lieu de {s}",
+                    .{ val.pro.prenom, val.gotLendemain.format(), val.expectedLendemain.format() },
+                );
+            },
+            .wrongDepartArriveePro => |val| {
+                title = "Départ ou arrivée d'une pro.";
+                switch (val.moment) {
+                    .firstArrival => {
+                        try w.writer.print(
+                            "Arrivée de la première pro à {s} (au lieu de {s})",
+                            .{ val.got.format(), val.expected.format() },
+                        );
+                    },
+                    .secondArrival => {
+                        try w.writer.print(
+                            "Arrivée de la deuxième pro à {s} (au lieu de {s})",
+                            .{ val.got.format(), val.expected.format() },
+                        );
+                    },
+                    .beforeLastGo => {
+                        try w.writer.print(
+                            "Départ de l'avant dernière pro à {s} (au lieu de {s})",
+                            .{ val.got.format(), val.expected.format() },
+                        );
+                    },
+                    .lastGo => {
+                        try w.writer.print(
+                            "Départ de la dernière pro à {s} (au lieu de {s})",
+                            .{ val.got.format(), val.expected.format() },
+                        );
+                    },
+                }
+            },
+            .wrongAdaptationHoraire => |val| {
+                title = "Horaires d'une adaptation";
+                try w.writer.print(
+                    "Horaires d'adaptation invalides (de {s} à {s})",
+                    .{ val.got.start.format(), val.got.end.format() },
+                );
+            },
+            .wrongRoulement => |val| {
+                title = "Roulement";
+                const got = try std.mem.join(gpa, " / ", &val.gotOrder);
+                const expected = try std.mem.join(gpa, " / ", &val.expectedOrder);
+                try w.writer.print("Roulement invalide : {s} au lieu de {s}", .{ got, expected });
+            },
+        }
+
+        return .{ .title = title, .message = try w.toOwnedSlice() };
+    }
 };
 
-//  `check` analyze les données fournies et s'assure notamment qu'il y a
+test "compile" {
+    const gpa = std.testing.allocator;
+    const ch = Check{ .wrongAdaptationHoraire = .{ .got = sh.Range.empty() } };
+    const s = try ch.format(gpa);
+    defer gpa.free(s.message);
+
+    const l = try Diagnostic.buildSlice(gpa, &[_]TimeCheck{
+        .{ .dayIndex = .{}, .horaireIndex = 0, .check = ch },
+        .{ .dayIndex = .{}, .horaireIndex = 0, .check = ch },
+    });
+    defer gpa.free(l);
+    defer l[0].deinit(gpa);
+    defer l[1].deinit(gpa);
+}
+
+// `check` analyze les données fournies et s'assure notamment qu'il y a
 // suffisament de pros à tout moment de la journée.
 //
 // La liste renvoyée est vide si et seulement si aucun problème n'est détecté.
-fn check(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.ProsPlanning, roulements: ?sh.Roulements) ![]Diagnostic {
+pub fn check(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.ProsPlanning, roulements: ?sh.Roulements) ![]TimeCheck {
     const normalizedChildren = buildChildrenCount(gpa, children);
     const normalizedPros = buildProsCount(gpa, pros);
     defer gpa.free(normalizedChildren);
     defer gpa.free(normalizedPros);
 
-    var out = try std.ArrayList(Diagnostic).initCapacity(gpa, 0);
+    var out = try std.ArrayList(TimeCheck).initCapacity(gpa, 0);
 
     for (pros.weeks) |weekRaw| {
         const weekI = weekRaw.week;

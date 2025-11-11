@@ -79,23 +79,14 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
-import {
-  type CreneauEnfant,
-  Children,
-  type PlanningChildren,
-  months,
-} from "@/logic/children";
-import {
-  computeDate,
-  copy,
-  formatHoraire,
-  type DayIndex,
-} from "@/logic/shared";
+import { firstDayPlanning, months } from "@/logic/children";
+import { computeDate, copy, formatHoraire } from "@/logic/shared";
+import type { ChildDay, ChildrenPlanning, DayIndex } from "@/logic/types";
 
-const props = defineProps<{ planning: PlanningChildren }>();
+const props = defineProps<{ planning: ChildrenPlanning }>();
 
 const emit = defineEmits<{
-  (e: "update", planning: PlanningChildren): void;
+  (e: "update", planning: ChildrenPlanning): void;
   (e: "goBack"): void;
   (e: "goNext"): void;
 }>();
@@ -107,13 +98,13 @@ watch(
   () => (inner.value = copy(props.planning))
 );
 
-const firstDay = computed(() => Children.firstDay(inner.value));
+const firstDay = computed(() => firstDayPlanning(inner.value));
 
 const month = computed(() => months[firstDay.value.getMonth()]!.toUpperCase());
 
 const days = computed(() => {
   const out: DayIndex[] = [];
-  const sCount = Children.semaineCount(inner.value);
+  const sCount = inner.value.weekCount;
   for (let week = 0; week < sCount; week++) {
     for (let day = 0; day < 5; day++) {
       out.push({ week, day });
@@ -132,7 +123,7 @@ function formatDay(day: DayIndex) {
     .padStart(2, "0")}`;
 }
 
-function formatHoraires(creneau: CreneauEnfant | null) {
+function formatHoraires(creneau: ChildDay | null) {
   if (creneau === null) return "";
   return `${formatHoraire(creneau.horaires.start)} ${formatHoraire(
     creneau.horaires.end

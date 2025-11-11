@@ -45,10 +45,10 @@
 </template>
 
 <script lang="ts" setup>
-import { type HoraireTravail, type Pro } from "@/logic/pros";
-import { copy } from "@/logic/shared";
+import { copy, rangeIncludes } from "@/logic/shared";
 import { computed, ref } from "vue";
 import HoraireField from "./HoraireField.vue";
+import type { HoraireTravail, Pro } from "@/logic/types";
 
 const props = defineProps<{
   pros: { pro: Pro; horaires: HoraireTravail }[];
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 const inner = ref(copy(props.pros.map((p) => p.horaires)));
 
 const isValid = computed(() =>
-  inner.value.every((hs) => hs.presence.includes(hs.pause))
+  inner.value.every((hs) => rangeIncludes(hs.presence, hs.pause))
 );
 </script>
 

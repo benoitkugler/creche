@@ -34,8 +34,8 @@
 </template>
 
 <script lang="ts" setup>
-import { TimeGrid } from "@/logic/check";
-import type { HoraireTravail, Pro } from "@/logic/pros";
+import { TimeGrid } from "@/logic/shared";
+import type { HoraireTravail, Pro } from "@/logic/types";
 import { computed } from "vue";
 
 const props = defineProps<{

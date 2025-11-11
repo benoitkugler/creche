@@ -1,133 +1,111 @@
 import {
   computeDate,
-  type DayIndex,
   type error,
   isError,
   newError,
-  Range,
-  type SemaineOf,
+  parseRange,
 } from "./shared";
+import type { Child, ChildCreneaux, ChildrenPlanning, DayIndex } from "./types";
 
-export type Child = {
-  nom: string;
-  dateNaissance: string; // maybe empty
-  isMarcheur: boolean;
-};
+type childCreneauxL = ChildCreneaux["creneaux"];
 
-export type CreneauEnfant = { horaires: Range; isAdaptation: boolean };
-
-type CreneauxEnfant = SemaineOf<CreneauEnfant | null>[];
-
-export type PlanningChildren = {
-  firstMonday: Date; // lien avec le calendrier réel
-  children: { child: Child; creneaux: CreneauxEnfant }[];
-};
-
-export namespace Children {
-  /** returns the maximum semaine */
-  export function semaineCount(input: PlanningChildren) {
-    return Math.max(...input.children.map((e) => e.creneaux.length));
-  }
-
-  function _firstDay(creneaux: CreneauxEnfant): DayIndex | null {
-    for (let iSemaine = 0; iSemaine < creneaux.length; iSemaine++) {
-      const semaine = creneaux[iSemaine]!;
-      for (let iDay = 0; iDay < semaine.length; iDay++) {
-        const day = semaine[iDay];
-        if (day != null) {
-          return { week: iSemaine, day: iDay };
-        }
+function _firstDay(creneaux: childCreneauxL): DayIndex | null {
+  for (let iSemaine = 0; iSemaine < creneaux.length; iSemaine++) {
+    const semaine = creneaux[iSemaine]!;
+    for (let iDay = 0; iDay < semaine.length; iDay++) {
+      const day = semaine[iDay];
+      if (day != null) {
+        return { week: iSemaine, day: iDay };
       }
     }
-    return null;
   }
+  return null;
+}
 
-  /** returns the actual first day (which also specifies the month) */
-  export function firstDay(input: PlanningChildren) {
-    const days = [];
-    for (const enfant of input.children) {
-      const day = _firstDay(enfant.creneaux);
-      if (day == null) continue;
-      days.push(computeDate(input.firstMonday, day));
-    }
-    days.sort((a, b) => a.getTime() - b.getTime());
-    return days[0];
+/** returns the actual first day (which also specifies the month) */
+export function firstDayPlanning(input: ChildrenPlanning) {
+  const days = [];
+  for (const enfant of input.children) {
+    const day = _firstDay(enfant.creneaux);
+    if (day == null) continue;
+    days.push(computeDate(input.firstMonday, day));
   }
+  days.sort((a, b) => a.getTime() - b.getTime());
+  return days[0];
+}
 
-  export function parsePDFEnfants(
-    texts: TextBlock[]
-  ): PlanningChildren | error {
-    // monkey patch upstream PDF error (pending a better solution)
-    texts.forEach((t) => (t.Text = t.Text.replaceAll("08:03", "08:00")));
+export function parseChildrenPDF(texts: TextBlock[]): ChildrenPlanning | error {
+  // monkey patch upstream PDF error (pending a better solution)
+  texts.forEach((t) => (t.Text = t.Text.replaceAll("08:03", "08:00")));
 
-    if (!texts.length) return newError("Document invalide (aucun text).");
-    if (!texts[0].Text.includes("PLANNING MENSUEL"))
-      return newError("Document invalide ('PLANNING MENSUEL' manquant).");
-    const t = parseMonth(texts[0].Text);
-    if (isError(t)) return t;
+  if (!texts.length) return newError("Document invalide (aucun text).");
+  if (!texts[0].Text.includes("PLANNING MENSUEL"))
+    return newError("Document invalide ('PLANNING MENSUEL' manquant).");
+  const t = parseMonth(texts[0].Text);
+  if (isError(t)) return t;
 
-    texts = texts.slice(1);
-    const [header, ...rows] = detectRows(texts);
+  texts = texts.slice(1);
+  const [header, ...rows] = detectRows(texts);
 
-    const firstDay = parseDay(t.month, t.year, header[1].Text);
+  const firstDay = parseDay(t.month, t.year, header[1].Text);
+  // discard first column and two last which are totals
+  const daysX = header.slice(1, -2).map((t) => t.X);
+  const daysCount = daysX.length;
+  const weekCount = Math.ceil(daysCount / 7);
+
+  const firstDayDay = firstDay.getDay();
+  const offset = firstDayDay - 1;
+  const firstMonday = new Date(
+    firstDay.getTime() - offset * 24 * 60 * 60 * 1000
+  );
+
+  const out: ChildrenPlanning = { firstMonday, children: [], weekCount };
+  for (const childRow of rows) {
+    const enfant = parseChild(childRow[0].Text);
+
+    const creneaux: childCreneauxL = Array.from({ length: weekCount }, () => [
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+
     // discard first column and two last which are totals
-    const daysX = header.slice(1, -2).map((t) => t.X);
-    const daysCount = daysX.length;
-    const weekCount = Math.ceil(daysCount / 7);
+    for (const day of trimAtLastHoraire(childRow.slice(1))) {
+      // find the closest day
+      let [bestIndex, bestDistance] = [0, 1e100];
+      daysX.forEach((x, index) => {
+        const distance = Math.abs(x - day.X);
+        if (distance < bestDistance) {
+          bestIndex = index;
+          bestDistance = distance;
+        }
+      });
 
-    const firstDayDay = firstDay.getDay();
-    const offset = firstDayDay - 1;
-    const firstMonday = new Date(
-      firstDay.getTime() - offset * 24 * 60 * 60 * 1000
-    );
+      const res = parseRange(day.Text);
+      if (isError(res)) return res;
 
-    const out: PlanningChildren = { firstMonday, children: [] };
-    for (const childRow of rows) {
-      const enfant = parseChild(childRow[0].Text);
+      // index --> semaine and weekday
+      const index = bestIndex + offset;
+      const semaineI = Math.floor(index / 7);
+      const dayI = index % 7;
+      if (dayI >= 5) continue; // ignore Samedi & Dimanche
 
-      const creneaux: CreneauxEnfant = Array.from({ length: weekCount }, () => [
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
-
-      // discard first column and two last which are totals
-      for (const day of trimAtLastHoraire(childRow.slice(1))) {
-        // find the closest day
-        let [bestIndex, bestDistance] = [0, 1e100];
-        daysX.forEach((x, index) => {
-          const distance = Math.abs(x - day.X);
-          if (distance < bestDistance) {
-            bestIndex = index;
-            bestDistance = distance;
-          }
-        });
-
-        const res = Range.parse(day.Text);
-        if (isError(res)) return res;
-
-        // index --> semaine and weekday
-        const index = bestIndex + offset;
-        const semaineI = Math.floor(index / 7);
-        const dayI = index % 7;
-        if (dayI >= 5) continue; // ignore Samedi & Dimanche
-
-        creneaux[semaineI][dayI] = { horaires: res, isAdaptation: false };
-      }
-
-      out.children.push({ child: enfant, creneaux });
+      creneaux[semaineI][dayI] = { horaires: res, isAdaptation: false };
     }
 
-    // the first week may be empty if the 01 is a Saturday or Sunday:
-    // remove it and shift firstMonday
-    if (firstDayDay == 6 || firstDayDay == 7) {
-      out.firstMonday.setDate(out.firstMonday.getDate() + 7);
-      out.children.forEach((enfant) => enfant.creneaux.splice(0, 1));
-    }
-    return out;
+    out.children.push({ child: enfant, creneaux });
   }
+
+  // the first week may be empty if the 01 is a Saturday or Sunday:
+  // remove it and shift firstMonday
+  if (firstDayDay == 6 || firstDayDay == 7) {
+    out.firstMonday.setDate(out.firstMonday.getDate() + 7);
+    out.children.forEach((enfant) => enfant.creneaux.splice(0, 1));
+    out.weekCount -= 1;
+  }
+  return out;
 }
 
 export type TextBlock = {

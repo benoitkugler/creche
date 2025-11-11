@@ -1,48 +1,53 @@
 import { expect, test } from "bun:test";
-import { type TextBlock, Children } from "./children";
-import { isError, Range } from "./shared";
+import { parseChildrenPDF, type TextBlock } from "./children";
+import { isError } from "./shared";
 
 test("parse personnel 0", async () => {
   const file = Bun.file("src/logic/sample_enfants_redacted_0.json");
   const data: TextBlock[] = await file.json();
-  const res = Children.parsePDFEnfants(data);
+  const res = parseChildrenPDF(data);
   expect(isError(res)).toBeFalse();
   if (isError(res)) return;
 
+  expect(res.weekCount).toBe(5);
   expect(res.firstMonday.toISOString()).toBe("2025-09-01T00:00:00.000Z");
   expect(res.children).toHaveLength(12);
   const enfant = res.children[1];
   expect(enfant.creneaux).toHaveLength(5);
   const semaine = enfant.creneaux[2]!;
-  expect(semaine[2]?.horaires).toEqual(
-    new Range({ heure: 6, minute: 30 }, { heure: 19, minute: 0 })
-  );
+  expect(semaine[2]?.horaires).toEqual({
+    start: { heure: 6, minute: 30 },
+    end: { heure: 19, minute: 0 },
+  });
 });
 
 test("parse personnel 1", async () => {
   const file = Bun.file("src/logic/sample_enfants_redacted_1.json");
   const data: TextBlock[] = await file.json();
-  const res = Children.parsePDFEnfants(data);
+  const res = parseChildrenPDF(data);
   expect(isError(res)).toBeFalse();
   if (isError(res)) return;
 
+  expect(res.weekCount).toBe(5);
   expect(res.firstMonday.toISOString()).toBe("2025-09-29T00:00:00.000Z");
   expect(res.children).toHaveLength(13);
   const enfant = res.children[1];
   expect(enfant.creneaux).toHaveLength(5);
   const semaine = enfant.creneaux[2]!;
-  expect(semaine[0]?.horaires).toEqual(
-    new Range({ heure: 10, minute: 0 }, { heure: 11, minute: 30 })
-  );
+  expect(semaine[0]?.horaires).toEqual({
+    start: { heure: 10, minute: 0 },
+    end: { heure: 11, minute: 30 },
+  });
 });
 
 test("parse personnel 2", async () => {
   const file = Bun.file("src/logic/sample_enfants_redacted_2.json");
   const data: TextBlock[] = await file.json();
-  const res = Children.parsePDFEnfants(data);
+  const res = parseChildrenPDF(data);
   expect(isError(res)).toBeFalse();
   if (isError(res)) return;
 
+  expect(res.weekCount).toBe(4);
   expect(res.firstMonday.toISOString()).toBe("2025-11-03T00:00:00.000Z");
   expect(res.children).toHaveLength(14);
   const enfant = res.children[0];
@@ -54,9 +59,10 @@ test("parse personnel 2", async () => {
 
   const enfantHoraireInvalid = res.children[12];
   const semaine = enfantHoraireInvalid.creneaux[2];
-  expect(semaine[3]?.horaires).toEqual(
-    new Range({ heure: 8, minute: 0 }, { heure: 18, minute: 0 })
-  );
+  expect(semaine[3]?.horaires).toEqual({
+    start: { heure: 8, minute: 0 },
+    end: { heure: 18, minute: 0 },
+  });
 
   const enfantLast = res.children[13];
   const semaineLast = enfantLast.creneaux[3];

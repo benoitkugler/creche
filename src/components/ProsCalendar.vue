@@ -50,21 +50,23 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  type Detachement,
-  type HoraireTravail,
-  type PlanningPros,
-} from "@/logic/pros";
-import { computeDate, type DayIndex, type int } from "@/logic/shared";
+import { computeDate, type int } from "@/logic/shared";
 import { computed, ref } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";
-import { check, type RoulementsN } from "@/logic/check";
-import type { PlanningChildren } from "@/logic/children";
+import type {
+  ChildrenPlanning,
+  DayIndex,
+  Detachement,
+  HoraireTravail,
+  ProsPlanning,
+  Roulements,
+} from "@/logic/types";
+import { Wasm } from "@/logic/wasm";
 
 const props = defineProps<{
-  planningChildren: PlanningChildren;
-  planningPros: PlanningPros;
-  roulements?: RoulementsN;
+  planningChildren: ChildrenPlanning;
+  planningPros: ProsPlanning;
+  roulements: Roulements | null;
 }>();
 
 const emit = defineEmits<{
@@ -72,7 +74,7 @@ const emit = defineEmits<{
   (
     e: "editDetachements",
     week: int,
-    detachements: (Detachement | undefined)[]
+    detachements: (Detachement | null)[]
   ): void;
 
   (e: "goBack"): void;
@@ -99,7 +101,11 @@ function formatSemaine(index: int) {
 }
 
 const diagnostics = computed(() => {
-  return check(props.planningChildren, props.planningPros, props.roulements);
+  return Wasm.check(
+    props.planningChildren,
+    props.planningPros,
+    props.roulements
+  );
 });
 
 function diagnosticFor(week: int) {

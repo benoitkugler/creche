@@ -4,6 +4,12 @@ pub const Horaire = struct {
     heure: u8,
     minute: u8,
 
+    pub fn format(h: Horaire) [5]u8 {
+        var buffer: [5]u8 = undefined;
+        _ = std.fmt.bufPrint(&buffer, "{:0>2}:{:0>2}", .{ h.heure, h.minute }) catch unreachable;
+        return buffer;
+    }
+
     // returns true if h1 <= h2
     pub fn isBefore(h1: Horaire, h2: Horaire) bool {
         return compare(h1, h2) != 1;
@@ -17,6 +23,11 @@ pub const Horaire = struct {
         return 0;
     }
 };
+
+test "Horaire.format" {
+    try std.testing.expectEqualStrings("01:01", &(Horaire{ .heure = 1, .minute = 1 }).format());
+    try std.testing.expectEqualStrings("11:55", &(Horaire{ .heure = 11, .minute = 55 }).format());
+}
 
 pub const Range = struct {
     start: Horaire,
@@ -139,6 +150,10 @@ pub fn indexToHoraire(index: TimeIndex) Horaire {
     };
 }
 
+// ISO string representation of a Date
+pub const Date = string;
+pub const defaultDateTag = "2000-01-01T00:00:00.000Z";
+
 pub const Detachement = struct {
     dayIndex: u8,
     horaires: Range,
@@ -173,6 +188,7 @@ pub const ChildCreneaux = struct {
 };
 
 pub const ChildrenPlanning = struct {
+    firstMonday: Date = defaultDateTag,
     children: []ChildCreneaux,
     weekCount: usize,
 };
@@ -203,6 +219,7 @@ pub const WeekPros = struct {
 };
 
 pub const ProsPlanning = struct {
+    firstMonday: Date = defaultDateTag,
     weeks: []const WeekPros,
 
     pub fn weekCount(input: ProsPlanning) usize {
@@ -223,6 +240,6 @@ pub const Roulements = struct {
 };
 
 pub const DayIndex = struct {
-    week: usize,
-    day: u8,
+    week: usize = 0,
+    day: u8 = 0,
 };

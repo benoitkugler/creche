@@ -1,7 +1,7 @@
 //go:build wasm
 
 // GOOS=js GOARCH=wasm go build -o main.wasm
-// mv main.wasm ../public/
+// mv main.wasm ../public/main_go.wasm
 package main
 
 import (
