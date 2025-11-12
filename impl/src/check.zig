@@ -153,7 +153,7 @@ test "compile" {
 // suffisament de pros à tout moment de la journée.
 //
 // La liste renvoyée est vide si et seulement si aucun problème n'est détecté.
-pub fn check(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.ProsPlanning, roulements: ?sh.Roulements) ![]TimeCheck {
+pub fn checkPlanning(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.ProsPlanning, roulements: ?sh.Roulements) ![]TimeCheck {
     const normalizedChildren = buildChildrenCount(gpa, children);
     const normalizedPros = buildProsCount(gpa, pros);
     defer gpa.free(normalizedChildren);
@@ -631,7 +631,7 @@ pub const LargeDay: sh.TimeIndex = 8 * 12 + 6;
 pub const MediumDay: sh.TimeIndex = 8 * 12 + 3;
 
 const MissingPause = struct { pro: sh.Pro };
-const WrongPauseDuration = struct { pro: sh.Pro, got: u16, reason: sh.string };
+const WrongPauseDuration = struct { pro: sh.Pro, got: u32, reason: sh.string };
 const WrongPauseHoraire = struct { pro: sh.Pro, got: sh.Range };
 
 const PauseCheck = union(enum) {
@@ -1229,9 +1229,9 @@ test "check repos" {
     try std.testing.expectEqual(ho(7, 15), diags.buffer[0].expectedLendemain);
 }
 
-// returns a shallow copy of `pros`, ordered according to
-// ouverture matin soir fermeture
-fn byPosition(comptime T: type, pros: [4]T, positions: [4]sh.Creneau) [4]T {
+// returns a shallow copy of `pros`, sorted according to
+// the creneau order (ouverture, matin, soir, fermeture)
+pub fn sortByCreneau(comptime T: type, pros: [4]T, positions: [4]sh.Creneau) [4]T {
     return .{
         pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.o) orelse 0],
         pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.m) orelse 0],
@@ -1269,7 +1269,7 @@ fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck 
     var out = RoulementCheck{};
     for (0..5) |dayI| {
         // expected
-        const exp = byPosition(u8, [_]u8{ 0, 1, 2, 3 }, expectedRoulement[dayI]);
+        const exp = sortByCreneau(u8, [_]u8{ 0, 1, 2, 3 }, expectedRoulement[dayI]);
         // real
         var prosForDay: [4]proIndex = @splat(undefined);
         var allAway = true;
@@ -1446,7 +1446,7 @@ test "check sample 0" {
     try std.testing.expectEqual(12, children.children.len);
     try std.testing.expectEqual(4, pros.weeks.len);
 
-    const diags = try check(gpa, children, pros, null);
+    const diags = try checkPlanning(gpa, children, pros, null);
     defer gpa.free(diags);
 
     try std.testing.expectEqual(36, diags.len);
@@ -1471,7 +1471,7 @@ test "check sample 1" {
     try std.testing.expectEqual(13, children.children.len);
     try std.testing.expectEqual(5, pros.weeks.len);
 
-    const diags = try check(gpa, children, pros, null);
+    const diags = try checkPlanning(gpa, children, pros, null);
     defer gpa.free(diags);
 
     try std.testing.expectEqual(32, diags.len);

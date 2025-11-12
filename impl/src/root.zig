@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 const sh = @import("shared.zig");
 const api = @import("api.zig");
 
-// zig build-exe src/root.zig -target wasm32-freestanding -O ReleaseFast -fno-entry --export=checkPlanningJSON --export=alloc --export=free
+// zig build-exe src/root.zig -target wasm32-freestanding -O ReleaseFast -fno-entry --export=alloc --export=free --export=checkPlanningJSON --export=createPlanningJSON
 // mv root.wasm ../public/main_zig.wasm
 const SlicePtr = packed struct(u64) {
     len: u32,
@@ -29,5 +29,11 @@ export fn free(ptr: [*]u8, len: usize) void {
 export fn checkPlanningJSON(jsonPtr: [*]u8, jsonLen: usize) u64 {
     const gpa = std.heap.wasm_allocator;
     const out = api.checkPlanning(gpa, jsonPtr, jsonLen) catch @panic("unexpected error in checkPlanning");
+    return SlicePtr.toInt(out);
+}
+
+export fn createPlanningJSON(jsonPtr: [*]u8, jsonLen: usize) u64 {
+    const gpa = std.heap.wasm_allocator;
+    const out = api.createPlanning(gpa, jsonPtr, jsonLen) catch @panic("unexpected error in createPlanning");
     return SlicePtr.toInt(out);
 }

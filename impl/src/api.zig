@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const sh = @import("shared.zig");
 const check = @import("check.zig");
+const create = @import("create.zig");
 
 const SlicePtr = packed struct(u64) {
     len: u32,
@@ -28,7 +29,7 @@ pub fn checkPlanning(gpa: Allocator, jsonPtr: [*]u8, jsonLen: usize) ![]u8 {
 
     var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
-    const checks = try check.check(arena.allocator(), input.children, input.pros, input.roulements);
+    const checks = try check.checkPlanning(arena.allocator(), input.children, input.pros, input.roulements);
     const out = try check.Diagnostic.buildSlice(arena.allocator(), checks);
 
     // build json output string
@@ -43,6 +44,7 @@ test "check" {
     const gpa = std.testing.allocator;
     var buffer = std.Io.Writer.Allocating.init(gpa);
     defer buffer.deinit();
+
     try std.json.Stringify.value(CheckIn{
         .children = .{ .children = &[_]sh.ChildCreneaux{}, .weekCount = 0 },
         .pros = .{ .weeks = &[_]sh.WeekPros{} },
@@ -54,4 +56,46 @@ test "check" {
 
     const out = try checkPlanning(gpa, jsonIn.ptr, jsonIn.len);
     defer gpa.free(out);
+}
+
+pub const CreateIn = struct {
+    children: sh.ChildrenPlanning,
+    roulements: sh.Roulements,
+    firstWeekRoulement: usize,
+};
+
+pub fn createPlanning(gpa: Allocator, jsonPtr: [*]u8, jsonLen: usize) ![]u8 {
+    const parsed: std.json.Parsed(CreateIn) = try std.json.parseFromSlice(CreateIn, gpa, jsonPtr[0..jsonLen], .{});
+    defer parsed.deinit();
+    const input = parsed.value;
+
+    const out = try create.createPlanning(gpa, input.children, input.roulements, input.firstWeekRoulement);
+    defer gpa.free(out.weeks);
+
+    // build json output string
+    var buffer = std.Io.Writer.Allocating.init(gpa);
+    defer buffer.deinit();
+    try std.json.Stringify.value(out, .{}, &buffer.writer);
+
+    return buffer.toOwnedSlice();
+}
+
+test "create" {
+    const gpa = std.testing.allocator;
+    var buffer = std.Io.Writer.Allocating.init(gpa);
+    defer buffer.deinit();
+
+    try std.json.Stringify.value(CreateIn{
+        .children = .{ .children = &[_]sh.ChildCreneaux{}, .weekCount = 0 },
+        .roulements = .{ .weeks = &[_]sh.WeekOf([4]sh.Creneau){} },
+        .firstWeekRoulement = 0,
+    }, .{}, &buffer.writer);
+    const jsonIn = buffer.written();
+
+    std.debug.print("const jsonIn = '{s}'\n", .{jsonIn});
+
+    const out = try createPlanning(gpa, jsonIn.ptr, jsonIn.len);
+    defer gpa.free(out);
+
+    std.debug.print("{s}\n", .{out});
 }

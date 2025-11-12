@@ -1,8 +1,9 @@
 import { parseChildrenPDF, type TextBlock } from "./children";
-import { type error, newError } from "./shared";
+import { type error, type int, newError } from "./shared";
 import type {
   CheckIn,
   ChildrenPlanning,
+  CreateIn,
   Diagnostic,
   ProsPlanning,
   Roulements,
@@ -40,7 +41,7 @@ type WasmZigExports = {
 
 type wasmTasks = {
   checkPlanningJSON: CheckIn;
-  createPlanningJSON: {};
+  createPlanningJSON: CreateIn;
 };
 
 export class WasmAPI {
@@ -69,6 +70,20 @@ export class WasmAPI {
   ): Diagnostic[] {
     return JSON.parse(
       this.runWasmZigFunc("checkPlanningJSON", { children, pros, roulements })
+    );
+  }
+
+  createPlanning(
+    children: ChildrenPlanning,
+    roulements: Roulements,
+    firstWeekRoulement: int
+  ): Diagnostic[] {
+    return JSON.parse(
+      this.runWasmZigFunc("createPlanningJSON", {
+        children,
+        roulements,
+        firstWeekRoulement,
+      })
     );
   }
 

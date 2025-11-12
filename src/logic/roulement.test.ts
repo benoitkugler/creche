@@ -25,4 +25,9 @@ test("read excel roulements", async () => {
   expect(isError(normalized)).toBeFalse();
   if (isError(normalized)) return;
   expect(normalized.roulements.weeks).toHaveLength(4);
+
+  await Bun.write(
+    Bun.file("roulements.json"),
+    JSON.stringify(normalized.roulements)
+  );
 });

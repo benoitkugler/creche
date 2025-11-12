@@ -88,6 +88,12 @@ export type Creneau =
 	| 's'
 	| 'f'
 
+export type CreateIn = {
+	children: ChildrenPlanning;
+	roulements: Roulements;
+	firstWeekRoulement: int;
+}
+
 export type Diagnostic = {
 	dayIndex: DayIndex;
 	horaireIndex: int;
@@ -103,5 +109,14 @@ export type DayIndex = {
 export type Diagnostic_Message = {
 	title: string;
 	message: string;
+}
+
+export type CreatedPlanning = {
+	weeks: CreatedWeek[];
+}
+
+export type CreatedWeek = {
+	roulement: int;
+	horaires: [[HoraireTravail, HoraireTravail, HoraireTravail, HoraireTravail, ], [HoraireTravail, HoraireTravail, HoraireTravail, HoraireTravail, ], [HoraireTravail, HoraireTravail, HoraireTravail, HoraireTravail, ], [HoraireTravail, HoraireTravail, HoraireTravail, HoraireTravail, ], [HoraireTravail, HoraireTravail, HoraireTravail, HoraireTravail, ], ];
 }
 

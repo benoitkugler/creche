@@ -4,10 +4,29 @@ pub const Horaire = struct {
     heure: u8,
     minute: u8,
 
+    fn fromDuration(minutes: u16) Horaire {
+        const outMinutes: u8 = @intCast(minutes % 60);
+        const outHour: u8 = @intCast((minutes - outMinutes) / 60);
+        return .{ .heure = outHour, .minute = outMinutes };
+    }
+
     pub fn format(h: Horaire) [5]u8 {
         var buffer: [5]u8 = undefined;
         _ = std.fmt.bufPrint(&buffer, "{:0>2}:{:0>2}", .{ h.heure, h.minute }) catch unreachable;
         return buffer;
+    }
+
+    // add a number of minutes and return a new horaire
+    pub fn addDuration(self: Horaire, d: u16) Horaire {
+        const outInMinutes = @as(u16, self.heure) * 60 + self.minute + d;
+        return Horaire.fromDuration(outInMinutes);
+    }
+
+    // substract a number of minutes and return a new horaire
+    // panics if d is too large
+    pub fn subDuration(self: Horaire, d: u16) Horaire {
+        const outInMinutes = @as(u16, self.heure) * 60 + self.minute - d;
+        return Horaire.fromDuration(outInMinutes);
     }
 
     // returns true if h1 <= h2
@@ -38,10 +57,12 @@ pub const Range = struct {
     }
 
     pub fn fromDuration(start: Horaire, minutes: u16) Range {
-        const endInMinutes = @as(u16, start.heure) * 60 + start.minute + minutes;
-        const endMinutes: u8 = @intCast(endInMinutes % 60);
-        const endHour: u8 = @intCast((endInMinutes - endMinutes) / 60);
-        return Range{ .start = start, .end = .{ .heure = endHour, .minute = endMinutes } };
+        return Range{ .start = start, .end = start.addDuration(minutes) };
+    }
+
+    // compute start by substracting minutes to end
+    pub fn fromDurationEnd(end: Horaire, minutes: u16) Range {
+        return Range{ .start = end.subDuration(minutes), .end = end };
     }
 
     pub fn isEmpty(self: Range) bool {
@@ -69,9 +90,9 @@ pub const Range = struct {
     }
 
     // renvoie la durée en minutes
-    pub fn duration(self: Range) u16 {
-        const debutM = @as(u16, self.start.heure) * 60 + self.start.minute;
-        const finM = @as(u16, self.end.heure) * 60 + self.end.minute;
+    pub fn duration(self: Range) u32 {
+        const debutM = @as(u32, self.start.heure) * 60 + self.start.minute;
+        const finM = @as(u32, self.end.heure) * 60 + self.end.minute;
         if (debutM > finM) return 0;
         return finM - debutM;
     }
@@ -122,7 +143,19 @@ test "range from duration" {
 pub const HoraireTravail = struct {
     presence: Range,
     pause: Range,
+
+    // returns the work duration, that is excluding pause,
+    // assuming pause is included in presence
+    pub fn workDuration(self: HoraireTravail) u32 {
+        return self.presence.duration() - self.pause.duration();
+    }
 };
+
+test "HoraireTravail.workDuration" {
+    try std.testing.expectEqual(30, (HoraireTravail{ .presence = r(ho(8, 0), ho(9, 0)), .pause = r(ho(8, 15), ho(8, 45)) }).workDuration());
+    try std.testing.expectEqual(0, (HoraireTravail{ .presence = r(ho(8, 0), ho(9, 0)), .pause = r(ho(8, 0), ho(9, 0)) }).workDuration());
+    try std.testing.expectEqual(75, (HoraireTravail{ .presence = r(ho(8, 0), ho(10, 30)), .pause = r(ho(8, 30), ho(9, 45)) }).workDuration());
+}
 
 const HeureMin = 6; // inclus
 const HeureMax = 22; // exclus
@@ -132,6 +165,10 @@ pub const TimeIndex = u16;
 pub const TimeIndexEmpty: TimeIndex = 0xFFFF;
 
 pub const TimeGridLength = 12 * (HeureMax - HeureMin);
+
+pub fn indexToMinutes(t: TimeIndex) u16 {
+    return t * 5;
+}
 
 pub fn minutesToIndex(m: u8) TimeIndex {
     return m / 5;
@@ -214,7 +251,7 @@ pub const Reunion = struct {
 pub const WeekPros = struct {
     week: usize, // index (0 based) par rapport au tableau des enfants
     prosHoraires: []const WeekPro, // pour chaque pro
-    roulement: u8, // index 0-based (entre 0 et 3) du roulement pour cette semaine
+    roulement: usize, // index 0-based (typiquement entre 0 et 3) du roulement pour cette semaine
     reunion: ?Reunion = null,
 };
 
