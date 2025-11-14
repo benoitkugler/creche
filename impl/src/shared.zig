@@ -190,8 +190,8 @@ test "HoraireTravail.workDuration" {
     try std.testing.expectEqual(75, (HoraireTravail{ .presence = r(ho(8, 0), ho(10, 30)), .pause = r(ho(8, 30), ho(9, 45)) }).workDuration());
 }
 
-const HeureMin = 6; // inclus
-const HeureMax = 22; // exclus
+pub const HeureMin = 6; // inclus
+pub const HeureMax = 22; // exclus
 
 pub const TimeIndex = u16;
 

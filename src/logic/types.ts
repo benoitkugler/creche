@@ -131,3 +131,7 @@ export type RoulementsAndPros = {
 };
 
 export type CreateOut = { done: ProsPlanning } | { err: string };
+
+export const HeureMin = 6;
+export const HeureMax = 22;
+export const TimeGridLength = 192;

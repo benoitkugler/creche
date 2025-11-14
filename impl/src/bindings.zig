@@ -179,6 +179,11 @@ pub fn main() !void {
     try generateType(gpa, api.CreateIn, &generated, &dst.writer);
     try generateType(gpa, api.CreateOut, &generated, &dst.writer);
 
+    // add some hard coded constants
+    try dst.writer.print("export const {s} = {}\n", .{ "HeureMin", sh.HeureMin });
+    try dst.writer.print("export const {s} = {}\n", .{ "HeureMax", sh.HeureMax });
+    try dst.writer.print("export const {s} = {}\n", .{ "TimeGridLength", sh.TimeGridLength });
+
     try std.fs.cwd().writeFile(.{ .sub_path = "../src/logic/types.ts", .data = dst.written() });
 
     std.debug.print("Done.\n", .{});

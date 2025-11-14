@@ -1,18 +1,5 @@
 <template>
   <v-container fluid>
-    <!-- <FilesLoader
-      v-if="step == 'load-files'"
-      @go-next="
-        (c, p, r) => {
-          childrenPlanning = c;
-          prosPlanning = p;
-          roulements = r;
-          step = 'view-children';
-          successMessage = 'Fichiers importés avec succès.';
-          save();
-        }
-      "
-    ></FilesLoader> -->
     <ViewChildren
       v-if="step == 'view-children'"
       :planning="childrenPlanning"
@@ -48,15 +35,6 @@
       @edit-detachements="editDetachementsPros"
       @go-back="step = 'view-children'"
     ></ViewPros>
-    <!-- <ProsCalendar
-      v-else-if="step == 'view-pros'"
-      :planning-children="childrenPlanning"
-      :planning-pros="prosPlanning"
-      :roulements="roulements"
-      @edit-horaires="editHorairesPros"
-      @edit-detachements="editDetachementsPros"
-      @go-back="step = 'view-children'"
-    ></ProsCalendar> -->
 
     <v-snackbar
       :model-value="successMessage != null"
@@ -72,7 +50,6 @@
 import { onMounted, ref } from "vue";
 
 import { fromJson, type int } from "./logic/shared";
-import ProsCalendar from "./components/ProsCalendar.vue";
 import type {
   ChildrenPlanning,
   DayIndex,
@@ -103,7 +80,7 @@ type localSave = {
   roulements: Roulements | null;
 };
 
-const currentVersion = 1;
+const currentVersion = 2;
 
 function save() {
   window.localStorage.setItem(

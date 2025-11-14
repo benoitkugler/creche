@@ -36,7 +36,7 @@
 <script lang="ts" setup>
 import { formatHoraireTravail } from "@/logic/pros";
 import { TimeGrid } from "@/logic/shared";
-import type { HoraireTravail, Pro } from "@/logic/types";
+import { TimeGridLength, type HoraireTravail, type Pro } from "@/logic/types";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -57,7 +57,7 @@ const heights = computed(() => {
     h2 * stepHeight,
     h3 * stepHeight,
     h4 * stepHeight,
-    TimeGrid.Length * stepHeight,
+    TimeGridLength * stepHeight,
   ] as const;
 });
 </script>

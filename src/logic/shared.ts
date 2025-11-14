@@ -1,5 +1,11 @@
 import Excel from "exceljs";
-import type { DayIndex, Horaire, Range } from "./types";
+import {
+  HeureMax,
+  HeureMin,
+  type DayIndex,
+  type Horaire,
+  type Range,
+} from "./types";
 
 export type int = number;
 
@@ -49,56 +55,6 @@ export function formatRange(r: Range) {
   return `${formatHoraire(r.start)} -> ${formatHoraire(r.end)}`;
 }
 
-// export class Range {
-//   constructor(public start: Horaire, public end: Horaire) {}
-
-//   static empty() {
-//     return new Range({ heure: 12, minute: 0 }, { heure: 12, minute: 0 });
-//   }
-
-//   static fromDuration(start: Horaire, duration: int) {
-//     const endInMinutes = start.heure * 60 + start.minute + duration;
-//     const endMinutes = (endInMinutes % 60) as Minute;
-//     const endHour = ((endInMinutes - endMinutes) / 60) as Heure;
-//     return new Range(start, { heure: endHour, minute: endMinutes });
-//   }
-
-//   toString() {
-//     return `${formatHoraire(this.start)} ${formatHoraire(this.end)}`;
-//   }
-
-//   isEmpty() {
-//     return isBefore(this.end, this.start);
-//   }
-
-//   contains(horaire: Horaire) {
-//     if (this.isEmpty()) return false;
-//     return isBefore(this.start, horaire) && isBefore(horaire, this.end);
-//   }
-
-//   /** returns true if other is (fully) included in this range */
-//   includes(other: Range) {
-//     if (other.isEmpty()) return true;
-//     return isBefore(this.start, other.start) && isBefore(other.end, this.end);
-//   }
-
-//   /** returns true is the intersection is non empty */
-//   overlaps(other: Range) {
-//     const intersection = new Range(
-//       isBefore(this.start, other.start) ? other.start : this.start,
-//       isBefore(this.end, other.end) ? this.end : other.end
-//     );
-//     return !intersection.isEmpty();
-//   }
-
-//   /** renvoie la durée en minutes */
-//   duration(): int {
-//     const debutM = this.start.heure * 60 + this.start.minute;
-//     const finM = this.end.heure * 60 + this.end.minute;
-//     return finM - debutM;
-//   }
-// }
-
 export function parseHoraire(hour: string, minute: string): Horaire | error {
   const h = isHeure(Number(hour));
   const m = isMinute(Number(minute));
@@ -126,9 +82,6 @@ export type Heure =
   | 19
   | 20
   | 21;
-
-export const HeureMin = 6; // inclus
-export const HeureMax = 22; // exclus
 
 export function isHeure(v: int): Heure | null {
   if (HeureMin <= v && v < HeureMax) {
@@ -232,8 +185,6 @@ export function arrayEquals<T>(a: T[], b: T[]) {
 export namespace TimeGrid {
   /** 0-based index into the grid timeline , represents 5 min */
   export type Index = int;
-
-  export const Length = 12 * (HeureMax - HeureMin);
 
   export const heures = Array.from({ length: HeureMax - HeureMin }).map(
     (_, i) => (HeureMin + i) as Heure
