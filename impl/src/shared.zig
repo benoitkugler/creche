@@ -23,6 +23,12 @@ pub const Horaire = struct {
     heure: u8 = 0,
     minute: u8 = 0,
 
+    /// returns true if the horaire is in the global range
+    /// defined by `HeureMin` and `HeureMin`
+    pub fn isValid(self: Horaire) bool {
+        return self.heure >= HeureMin and self.heure < HeureMax;
+    }
+
     fn fromDuration(minutes: u16) Horaire {
         const outMinutes: u8 = @intCast(minutes % 60);
         const outHour: u8 = @intCast((minutes - outMinutes) / 60);
@@ -300,7 +306,7 @@ pub const ProsPlanning = struct {
         return max + 1;
     }
 
-    pub fn deinit(self: *ProsPlanning, gpa: Allocator) void {
+    pub fn deinit(self: *const ProsPlanning, gpa: Allocator) void {
         for (self.weeks, 0..) |_, i| {
             self.weeks[i].deinit(gpa);
         }

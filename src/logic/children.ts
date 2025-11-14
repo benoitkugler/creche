@@ -23,7 +23,7 @@ function _firstDay(creneaux: childCreneauxL): DayIndex | null {
 }
 
 /** returns the actual first day (which also specifies the month) */
-export function firstDayPlanning(input: ChildrenPlanning) {
+export function planningMonth(input: ChildrenPlanning) {
   const days = [];
   for (const enfant of input.children) {
     const day = _firstDay(enfant.creneaux);
@@ -31,7 +31,11 @@ export function firstDayPlanning(input: ChildrenPlanning) {
     days.push(computeDate(input.firstMonday, day));
   }
   days.sort((a, b) => a.getTime() - b.getTime());
-  return days[0];
+  const firstDay = days[0];
+
+  const month = months[firstDay.getMonth()].toUpperCase();
+
+  return `${month} ${firstDay.getFullYear()}`;
 }
 
 export function parseChildrenPDF(texts: TextBlock[]): ChildrenPlanning | error {
@@ -147,7 +151,7 @@ function detectRows(texts: TextBlock[]) {
   return rows;
 }
 
-export const months = [
+const months = [
   "janvier",
   "février",
   "mars",

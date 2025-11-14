@@ -7,15 +7,6 @@ const HorairesT4 = [4]sh.HoraireTravail;
 
 const WeekHoraires = sh.WeekOf(HorairesT4);
 
-pub const CreatedWeek = struct {
-    roulement: usize,
-    horaires: [4]sh.WeekOf(sh.HoraireTravail), // for each pro
-};
-
-pub const CreatedPlanning = struct {
-    weeks: []const CreatedWeek,
-};
-
 const CreatePlanningError = error{ConstraintsNotResolved};
 
 // `firstWeekRoulement` is the (0-based) index in `roulements` of the
@@ -27,7 +18,10 @@ pub fn createPlanning(gpa: Allocator, children: sh.ChildrenPlanning, roulements:
     const R = roulements.roulements.weeks.len;
     const childrenCounts = check.buildChildrenCount(arena.allocator(), children);
 
-    var weeks = try gpa.alloc(sh.WeekPros, childrenCounts.len);
+    // to simplify freeing memory on error allocate a temporary storage
+    const BestWeek = struct { week: WeekHoraires, roulement: usize };
+    var bestWeeks = try gpa.alloc(BestWeek, childrenCounts.len);
+    defer gpa.free(bestWeeks);
 
     for (childrenCounts, 0..) |weekChildren, weekI| {
         const roulementI = (firstWeekRoulement + weekI) % R;
@@ -83,18 +77,22 @@ pub fn createPlanning(gpa: Allocator, children: sh.ChildrenPlanning, roulements:
         }
 
         // printHoraires(&bestWeek);
+        bestWeeks[weekI] = .{ .roulement = roulementI, .week = bestWeek };
+    }
 
+    var weeks = try gpa.alloc(sh.WeekPros, childrenCounts.len);
+    for (bestWeeks, 0..) |value, weekI| {
         // convert to pro first
         const pros = try gpa.alloc(sh.WeekPro, 4);
         for (roulements.pros, 0..) |pro, i| {
             pros[i].pro = pro;
         }
-        for (bestWeek, 0..) |day, dayI| {
+        for (value.week, 0..) |day, dayI| {
             for (day, 0..) |h, proI| {
                 pros[proI].horaires[dayI] = h;
             }
         }
-        weeks[weekI] = sh.WeekPros{ .week = weekI, .prosHoraires = pros, .roulement = roulementI, .reunion = null };
+        weeks[weekI] = sh.WeekPros{ .week = weekI, .prosHoraires = pros, .roulement = value.roulement, .reunion = null };
     }
 
     return .{ .firstMonday = children.firstMonday, .weeks = weeks };
@@ -249,11 +247,13 @@ const HorairesBuffer = [pausesCombinationCount]HorairesT4;
 
 // dayDurations are expressed in grid index, and in "rotation order"
 // the returned slices are in "rotation order"
+// return an error if the computed start or end do not fit in
+// the global time range.
 pub fn generateHorairesFromDurations(
     arrivals: check.Arrivals,
     dayDurations: Durations,
     out: *HorairesBuffer,
-) void {
+) error{durationTooLarge}!void {
     // for each pro, there is 3 horaires to choose ;
     // - the "other" end of the day : defined by dayDurations
     // - the pause duration : defined by the day duration
@@ -287,6 +287,11 @@ pub fn generateHorairesFromDurations(
 
     // fermeture
     const presence4 = sh.Range.fromDurationEnd(fermeture, sh.indexToMinutes(dayDurations[3]));
+
+    // safety check for edge cases
+    if (!(presence1.end.isValid() and presence2.end.isValid() and presence3.start.isValid() and presence4.start.isValid())) {
+        return error.durationTooLarge;
+    }
 
     var i: usize = 0;
     for (pausesStart1) |pause1| {
@@ -359,7 +364,7 @@ fn computeValidHoraires(
     out: *HorairesBuffer,
 ) []const HorairesT4 {
     // try every pauses ...
-    generateHorairesFromDurations(arrivals, durations, scratch);
+    generateHorairesFromDurations(arrivals, durations, scratch) catch return &.{};
 
     // ... and check if we have (at least) a solution that satisifies every "day by day" checks
     var currentIndex: usize = 0;

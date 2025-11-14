@@ -1,6 +1,6 @@
 <template>
   <v-container fluid>
-    <FilesLoader
+    <!-- <FilesLoader
       v-if="step == 'load-files'"
       @go-next="
         (c, p, r) => {
@@ -12,20 +12,43 @@
           save();
         }
       "
-    ></FilesLoader>
-    <ChildrenCalendar
-      v-else-if="step == 'view-children'"
-      @go-back="step = 'load-files'"
-      @go-next="step = 'view-pros'"
+    ></FilesLoader> -->
+    <ViewChildren
+      v-if="step == 'view-children'"
       :planning="childrenPlanning"
+      @go-next="step = 'view-pros'"
       @update="
         (p) => {
           childrenPlanning = p;
           save();
         }
       "
-    ></ChildrenCalendar>
-    <ProsCalendar
+      @load="
+        (p) => {
+          childrenPlanning = p;
+          prosPlanning = null;
+          roulements = null;
+          save();
+        }
+      "
+    ></ViewChildren>
+    <ViewPros
+      v-else-if="childrenPlanning && step == 'view-pros'"
+      :planning-children="childrenPlanning"
+      :planning-pros="prosPlanning"
+      :roulements="roulements"
+      @update="
+        (p, r) => {
+          prosPlanning = p;
+          roulements = r;
+          save();
+        }
+      "
+      @edit-horaires="editHorairesPros"
+      @edit-detachements="editDetachementsPros"
+      @go-back="step = 'view-children'"
+    ></ViewPros>
+    <!-- <ProsCalendar
       v-else-if="step == 'view-pros'"
       :planning-children="childrenPlanning"
       :planning-pros="prosPlanning"
@@ -33,7 +56,7 @@
       @edit-horaires="editHorairesPros"
       @edit-detachements="editDetachementsPros"
       @go-back="step = 'view-children'"
-    ></ProsCalendar>
+    ></ProsCalendar> -->
 
     <v-snackbar
       :model-value="successMessage != null"
@@ -48,8 +71,6 @@
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
 
-import FilesLoader from "./components/FilesLoader.vue";
-import ChildrenCalendar from "./components/ChildrenCalendar.vue";
 import { fromJson, type int } from "./logic/shared";
 import ProsCalendar from "./components/ProsCalendar.vue";
 import type {
@@ -60,21 +81,16 @@ import type {
   ProsPlanning,
   Roulements,
 } from "./logic/types";
+import ViewChildren from "./components/ViewChildren.vue";
+import ViewPros from "./components/ViewPros.vue";
 
 onMounted(load);
 
-const step = ref<"load-files" | "view-children" | "view-pros">("load-files");
+const step = ref<"view-children" | "view-pros">("view-children");
 
-const childrenPlanning = ref<ChildrenPlanning>({
-  firstMonday: new Date(),
-  children: [],
-  weekCount: 0,
-});
+const childrenPlanning = ref<ChildrenPlanning | null>(null);
 
-const prosPlanning = ref<ProsPlanning>({
-  firstMonday: new Date(),
-  weeks: [],
-});
+const prosPlanning = ref<ProsPlanning | null>(null);
 
 const roulements = ref<Roulements | null>(null);
 
@@ -116,6 +132,7 @@ function load() {
 }
 
 function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
+  if (!prosPlanning.value) return;
   const l = prosPlanning.value.weeks[day.week].prosHoraires;
   if (l.length != horaires.length) return; // should not happen
   horaires.forEach((v, i) => (l[i].horaires[day.day] = v));
@@ -124,6 +141,7 @@ function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
 }
 
 function editDetachementsPros(week: int, detachements: (Detachement | null)[]) {
+  if (!prosPlanning.value) return;
   const l = prosPlanning.value.weeks[week].prosHoraires;
   if (l.length != detachements.length) return; // should not happen
   detachements.forEach((v, i) => (l[i].detachement = v));

@@ -71,9 +71,11 @@ export async function _parseExcelRoulements(
   return out;
 }
 
+export type ParsedRoulements = { pros: Arr4<Pro>; roulements: Roulements };
+
 export async function parseExcelRoulements(
   file: Blob
-): Promise<{ pros: Arr4<Pro>; roulements: Roulements } | error> {
+): Promise<ParsedRoulements | error> {
   const out = await _parseExcelRoulements(file);
   if (isError(out)) return out;
   return normalizeRoulements(out);

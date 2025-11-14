@@ -1,14 +1,15 @@
 import { parseChildrenPDF, type TextBlock } from "./children";
-import { type error, type int, newError } from "./shared";
+import { type error, fromJson, type int, newError } from "./shared";
 import type {
-  CheckIn,
   ChildrenPlanning,
-  CreateIn,
+  CreateOut,
   Diagnostic,
   ProsPlanning,
   Roulements,
+  RoulementsAndPros,
 } from "./types";
 import "./wasm_exec";
+import type { WorkerMessageData, ZigWasmTasks } from "./wasm_worker";
 
 /**
  * Go is the class as defined in the Golang `wasm_exec.js` distributable file required for WebAssembly.
@@ -31,27 +32,11 @@ declare global {
   }
 }
 
-type WasmZigExports = {
-  memory: WebAssembly.Memory;
-  alloc: (len: number) => number;
-  free: (ptr: number, len: number) => void;
-  checkPlanningJSON: (ptr: number, len: number) => bigint;
-  createPlanningJSON: (ptr: number, len: number) => bigint;
-};
-
-type wasmTasks = {
-  checkPlanningJSON: CheckIn;
-  createPlanningJSON: CreateIn;
-};
-
 export class WasmAPI {
-  constructor(private wasmZig: WasmZigExports) {}
+  constructor(private wasmZig: WebAssembly.Module) {}
 
   static async init() {
-    const result1 = await WebAssembly.instantiateStreaming(
-      fetch("main_zig.wasm")
-    );
-    const wasmZig = result1.instance.exports as WasmZigExports;
+    const wasmZig = await WebAssembly.compileStreaming(fetch("main_zig.wasm"));
 
     const go = new Go();
     const result2 = await WebAssembly.instantiateStreaming(
@@ -63,28 +48,36 @@ export class WasmAPI {
     return new WasmAPI(wasmZig);
   }
 
-  check(
+  async check(
     children: ChildrenPlanning,
     pros: ProsPlanning,
     roulements: Roulements | null
-  ): Diagnostic[] {
-    return JSON.parse(
-      this.runWasmZigFunc("checkPlanningJSON", { children, pros, roulements })
-    );
+  ): Promise<Diagnostic[]> {
+    const json = await this.runZigWasmWorker("checkPlanningJSON", {
+      children,
+      pros,
+      roulements,
+    });
+    return fromJson(json);
   }
 
-  createPlanning(
+  async createPlanning(
     children: ChildrenPlanning,
-    roulements: Roulements,
+    roulements: RoulementsAndPros,
     firstWeekRoulement: int
-  ): Diagnostic[] {
-    return JSON.parse(
-      this.runWasmZigFunc("createPlanningJSON", {
-        children,
-        roulements,
-        firstWeekRoulement,
-      })
-    );
+  ) {
+    const jsonOut = await this.runZigWasmWorker("createPlanningJSON", {
+      children,
+      roulements,
+      firstWeekRoulement,
+    });
+
+    const out: CreateOut = fromJson(jsonOut);
+    if ("err" in out) {
+      return newError(out.err);
+    } else {
+      return out.done;
+    }
   }
 
   parseChildrenPDFFile(slice: Uint8Array): error | ChildrenPlanning {
@@ -98,32 +91,28 @@ export class WasmAPI {
     return parseChildrenPDF(textsContents);
   }
 
-  // returns JSON string
-  private runWasmZigFunc<K extends keyof wasmTasks>(
+  // launch wasm in a web worker and returns a JSON string
+  private async runZigWasmWorker<K extends keyof ZigWasmTasks>(
     task: K,
-    input: wasmTasks[K]
+    input: ZigWasmTasks[K]
   ) {
-    const { memory, alloc, free } = this.wasmZig;
-    const fn = this.wasmZig[task];
-    // convert to JSON utf-8
-    const encoded = new TextEncoder().encode(JSON.stringify(input));
-    // allocate ...
-    const inLen = encoded.length;
-    const inPtr = alloc(inLen);
-    // ... and copy 'encoded' into the wasm allocated memory
-    const tmp = new Uint8Array(memory.buffer, inPtr, inLen);
-    tmp.set(encoded);
-    // actually run the task (wasm side)
-    const outAsU64 = fn(inPtr, inLen);
-    const outPtr = Number(outAsU64 >> 32n);
-    const outLen = Number(outAsU64 & 0xffffffffn);
-    // convert back to JS using JSON
-    const outputView = new Uint8Array(memory.buffer, outPtr, outLen);
-    const output = new TextDecoder().decode(outputView);
-    free(inPtr, inLen);
-    free(outPtr, outLen);
-    // free memory before returning
-    return output;
+    const worker = new Worker(new URL("wasm_worker.js", import.meta.url));
+    const message: WorkerMessageData = {
+      wasm: this.wasmZig,
+      task,
+      json: JSON.stringify(input),
+    };
+
+    const p = new Promise<string>((resolve, _) => {
+      // setup message
+      worker.onmessage = (ev) => {
+        resolve(ev.data);
+      };
+      // launch background work
+      worker.postMessage(message);
+    });
+
+    return p;
   }
 }
 

@@ -1,5 +1,6 @@
 import {
   emptyRange,
+  formatRange,
   isError,
   newError,
   parseHoraire,
@@ -29,7 +30,7 @@ export function emptyHoraireTravail(): HoraireTravail {
 }
 
 export function formatHoraireTravail(h: HoraireTravail) {
-  return `${h.presence.toString()} (pause: ${h.pause.toString()})`;
+  return `${formatRange(h.presence)} (pause: ${formatRange(h.pause)})`;
 }
 
 export async function parseExcelPros(
@@ -97,6 +98,9 @@ export async function parseExcelPros(
   if (currentWeek.prosHoraires.length != 0) {
     out.weeks.push(currentWeek);
   }
+
+  if (!out.weeks.length)
+    return newError("Planning des pros invalide (ou vide).");
 
   return out;
 }

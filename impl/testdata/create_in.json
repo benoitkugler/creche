@@ -1,0 +1,2625 @@
+{
+    "children": {
+        "firstMonday": "2025-08-31T22:00:00.000Z",
+        "children": [
+            {
+                "child": {
+                    "nom": "BANGOURA Ladjy",
+                    "dateNaissance": "19/02/2025",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 12,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "DEBBACHE Thyam",
+                    "dateNaissance": "20/06/2024",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "DUWER DUFOREST Alan",
+                    "dateNaissance": "21/09/2023",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "EKWE Swan",
+                    "dateNaissance": "05/07/2023",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "JAMET Charlie",
+                    "dateNaissance": "06/01/2023",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 11,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 10,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 11,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 10,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 12,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 13,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "JOLLY Juliette",
+                    "dateNaissance": "07/12/2023",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "LEMAY GUILLIN Suzanne",
+                    "dateNaissance": "26/06/2024",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        null,
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 40
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "PALHARES Giulia",
+                    "dateNaissance": "18/02/2025",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 14,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 14,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 12,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 21,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "PINON Eliott",
+                    "dateNaissance": "01/08/2024",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 7,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 20,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 21,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 21,
+                                    "minute": 15
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "SYLVAIN Noah",
+                    "dateNaissance": "21/09/2023",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        null,
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 6,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "VALERO Celeste",
+                    "dateNaissance": "03/05/2025",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 14,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 10,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 11,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 10,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 12,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 14,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 18,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 8,
+                                    "minute": 45
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            },
+            {
+                "child": {
+                    "nom": "VERTON SARABEN Mayna",
+                    "dateNaissance": "04/02/2025",
+                    "isMarcheur": false
+                },
+                "creneaux": [
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 11,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 17,
+                                    "minute": 0
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 7,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 7,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 7,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 19,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 7,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 7,
+                                    "minute": 30
+                                },
+                                "end": {
+                                    "heure": 16,
+                                    "minute": 45
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        }
+                    ],
+                    [
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        {
+                            "horaires": {
+                                "start": {
+                                    "heure": 9,
+                                    "minute": 0
+                                },
+                                "end": {
+                                    "heure": 15,
+                                    "minute": 30
+                                }
+                            },
+                            "isAdaptation": false
+                        },
+                        null,
+                        null,
+                        null
+                    ]
+                ]
+            }
+        ],
+        "weekCount": 5
+    },
+    "roulements": {
+        "pros": [
+            {
+                "prenom": "R. Ilona",
+                "color": "#CCFFCC",
+                "isInterimaire": false
+            },
+            {
+                "prenom": "M. Sara",
+                "color": "#FF8080",
+                "isInterimaire": false
+            },
+            {
+                "prenom": "Ghénima",
+                "color": "#99CC00",
+                "isInterimaire": false
+            },
+            {
+                "prenom": "M. Magali",
+                "color": "#FFFF99",
+                "isInterimaire": false
+            }
+        ],
+        "roulements": {
+            "weeks": [
+                [
+                    [
+                        "s",
+                        "m",
+                        "f",
+                        "o"
+                    ],
+                    [
+                        "o",
+                        "f",
+                        "s",
+                        "m"
+                    ],
+                    [
+                        "o",
+                        "m",
+                        "s",
+                        "f"
+                    ],
+                    [
+                        "f",
+                        "m",
+                        "o",
+                        "s"
+                    ],
+                    [
+                        "s",
+                        "o",
+                        "m",
+                        "f"
+                    ]
+                ],
+                [
+                    [
+                        "o",
+                        "s",
+                        "m",
+                        "f"
+                    ],
+                    [
+                        "s",
+                        "o",
+                        "f",
+                        "m"
+                    ],
+                    [
+                        "m",
+                        "o",
+                        "s",
+                        "f"
+                    ],
+                    [
+                        "o",
+                        "f",
+                        "m",
+                        "s"
+                    ],
+                    [
+                        "f",
+                        "s",
+                        "o",
+                        "m"
+                    ]
+                ],
+                [
+                    [
+                        "f",
+                        "o",
+                        "s",
+                        "m"
+                    ],
+                    [
+                        "m",
+                        "s",
+                        "o",
+                        "f"
+                    ],
+                    [
+                        "f",
+                        "m",
+                        "o",
+                        "s"
+                    ],
+                    [
+                        "s",
+                        "o",
+                        "f",
+                        "m"
+                    ],
+                    [
+                        "m",
+                        "f",
+                        "s",
+                        "o"
+                    ]
+                ],
+                [
+                    [
+                        "m",
+                        "f",
+                        "o",
+                        "s"
+                    ],
+                    [
+                        "f",
+                        "s",
+                        "m",
+                        "o"
+                    ],
+                    [
+                        "s",
+                        "f",
+                        "m",
+                        "o"
+                    ],
+                    [
+                        "m",
+                        "s",
+                        "f",
+                        "o"
+                    ],
+                    [
+                        "o",
+                        "m",
+                        "f",
+                        "s"
+                    ]
+                ]
+            ]
+        }
+    },
+    "firstWeekRoulement": 0
+}

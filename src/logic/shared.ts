@@ -45,6 +45,10 @@ export function parseRange(cell: string): Range | error {
   return { start, end };
 }
 
+export function formatRange(r: Range) {
+  return `${formatHoraire(r.start)} -> ${formatHoraire(r.end)}`;
+}
+
 // export class Range {
 //   constructor(public start: Horaire, public end: Horaire) {}
 

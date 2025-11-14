@@ -11,7 +11,7 @@
           }"
         ></div>
       </template>
-      {{ props.pro.prenom }}
+      {{ props.pro.prenom }} : {{ formatHoraireTravail(props.horaires) }}
     </v-tooltip>
 
     <div :style="{ height: heights[2] - heights[1] + 'px' }"></div>
@@ -26,7 +26,7 @@
           }"
         ></div>
       </template>
-      {{ props.pro.prenom }}
+      {{ props.pro.prenom }} : {{ formatHoraireTravail(props.horaires) }}
     </v-tooltip>
 
     <div :style="{ height: heights[4] - heights[3] + 'px' }"></div>
@@ -34,6 +34,7 @@
 </template>
 
 <script lang="ts" setup>
+import { formatHoraireTravail } from "@/logic/pros";
 import { TimeGrid } from "@/logic/shared";
 import type { HoraireTravail, Pro } from "@/logic/types";
 import { computed } from "vue";
