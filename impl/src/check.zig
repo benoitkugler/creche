@@ -32,7 +32,7 @@ pub const Diagnostic = struct {
     }
 };
 
-const TimeCheck = struct {
+pub const TimeCheck = struct {
     dayIndex: sh.DayIndex,
     horaireIndex: sh.TimeIndex,
     check: Check,
@@ -47,7 +47,7 @@ const Check = union(enum) {
     wrongDepartArriveePro: WrongDepartArriveePro,
     wrongRoulement: WrongRoulement,
 
-    fn format(self: Check, gpa: Allocator) !Diagnostic.Message {
+    pub fn format(self: Check, gpa: Allocator) !Diagnostic.Message {
         var w = std.Io.Writer.Allocating.init(gpa);
         defer w.deinit();
         var title: sh.string = "";
@@ -177,14 +177,21 @@ pub fn checkPlanning(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.Pro
             }
 
             // Arrivée et départ
-            const l = checkProsArrivals(&dayChildren, &dayPros);
-            for (l.buffer[0..l.len]) |c| {
+            var prosHoraires = try gpa.alloc(sh.Range, weekRaw.prosHoraires.len);
+            for (weekRaw.prosHoraires, 0..) |value, i| {
+                prosHoraires[i] = value.horaires[dayI].presence;
+            }
+
+            const l = checkProsArrivals(&dayChildren, prosHoraires);
+            for (l.slice()) |c| {
                 try out.append(gpa, .{
                     .dayIndex = dayIndex,
                     .horaireIndex = sh.horaireToIndex(c.got),
                     .check = .{ .wrongDepartArriveePro = c },
                 });
             }
+
+            gpa.free(prosHoraires);
         }
     }
 
@@ -223,7 +230,7 @@ pub fn checkPlanning(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.Pro
 
             // Repos
             const l = checkRepos(semainePro);
-            for (l.buffer[0..l.len]) |c| {
+            for (l.slice()) |c| {
                 try out.append(gpa, .{
                     .dayIndex = .{ .week = week.week, .day = c.dayIndex },
                     .horaireIndex = sh.horaireToIndex(semainePro.horaires[c.dayIndex].presence.end),
@@ -245,7 +252,7 @@ pub fn checkPlanning(gpa: Allocator, children: sh.ChildrenPlanning, pros: sh.Pro
         // Optionnal roulement check
         if (roulements) |val| {
             const lRoulements = checkRoulements(week, val);
-            for (lRoulements.buffer[0..lRoulements.len]) |c| {
+            for (lRoulements.slice()) |c| {
                 try out.append(gpa, .{
                     .dayIndex = .{ .week = week.week, .day = c.dayIndex },
                     .horaireIndex = 0,
@@ -873,7 +880,7 @@ const WrongDepartArriveePro = struct {
     got: sh.Horaire,
 };
 
-const ArrivalsCheck = FixedBuffer(WrongDepartArriveePro, 4);
+const ArrivalsCheck = sh.FixedBuffer(WrongDepartArriveePro, 4);
 
 fn hasOne(v: u8) bool {
     return v > 0;
@@ -882,36 +889,71 @@ fn hasTwo(v: u8) bool {
     return v >= 2;
 }
 
+fn prosArrivals(pros: []const sh.Range) Arrivals {
+    // find the two smallest start and two largest end values,
+    // excluding empty ranges
+
+    var firstArrival = sh.TimeIndexEmpty;
+    var secondArrival = sh.TimeIndexEmpty;
+    var beforeLastGo: sh.TimeIndex = 0;
+    var lastGo: sh.TimeIndex = 0;
+    for (pros) |value| {
+        if (value.isEmpty()) continue;
+
+        const start = sh.horaireToIndex(value.start);
+        if (start < firstArrival) { // shift 1 2 -> new 1
+            secondArrival = firstArrival;
+            firstArrival = start;
+        } else if (start < secondArrival) {
+            secondArrival = start;
+        }
+
+        const end = sh.horaireToIndex(value.end) - 1; // we return last presence
+        if (end > lastGo) {
+            beforeLastGo = lastGo;
+            lastGo = end;
+        } else if (end > beforeLastGo) {
+            beforeLastGo = end;
+        }
+    }
+
+    return .{
+        .firstArrival = firstArrival,
+        .secondArrival = secondArrival,
+        .beforeLastGo = beforeLastGo,
+        .lastGo = lastGo,
+    };
+}
+
 // Arrivee: La première pro doit arriver 15 min avant le premier enfant, la deuxième pro 15 min avant le 4° enfant.
 // Depart: L’avant-dernière pro doit partir 15 min après le 4° enfant restant, la dernière pro 30 min après le dernier enfant.
-fn checkProsArrivals(children: []const ChildrenCount, pros: []const u8) ArrivalsCheck {
+fn checkProsArrivals(children: []const ChildrenCount, prosHoraires: []const sh.Range) ArrivalsCheck {
     var out = ArrivalsCheck{};
 
     const expected = expectedArrivals(children);
+    const got = prosArrivals(prosHoraires);
 
     // if there is no kids, all good !
     if (expected.firstArrival == sh.TimeIndexEmpty) return out;
 
     // first arrival
-    const indexFirstPro = firstIndex(u8, pros, hasOne) orelse 0;
-    if (expected.firstArrival != indexFirstPro) {
+    if (expected.firstArrival != got.firstArrival) {
         out.push(.{
             .moment = .firstArrival,
             .expected = sh.indexToHoraire(expected.firstArrival),
-            .got = sh.indexToHoraire(@intCast(indexFirstPro)),
+            .got = sh.indexToHoraire(got.firstArrival),
         });
     }
 
     // last go
-    const indexLastPro = lastIndex(u8, pros, hasOne) orelse 0;
-    if (expected.lastGo != indexLastPro) {
+    if (expected.lastGo != got.lastGo) {
         // the index here are the last PRESENCE, so the
         // depart is actually the next (hence the +1 in the returned value)
 
         out.push(.{
             .moment = .lastGo,
             .expected = sh.indexToHoraire(expected.lastGo + 1),
-            .got = sh.indexToHoraire(@intCast(indexLastPro + 1)),
+            .got = sh.indexToHoraire(got.lastGo + 1),
         });
     }
 
@@ -921,26 +963,28 @@ fn checkProsArrivals(children: []const ChildrenCount, pros: []const u8) Arrivals
         return out;
     }
 
-    const indexSecondPro = firstIndex(u8, pros, hasTwo) orelse 0;
-    if (expected.secondArrival != indexSecondPro) {
+    if (expected.secondArrival != got.secondArrival) {
         out.push(.{
             .moment = .secondArrival,
             .expected = sh.indexToHoraire(expected.secondArrival),
-            .got = sh.indexToHoraire(@intCast(indexSecondPro)),
+            .got = sh.indexToHoraire(got.secondArrival),
         });
     }
 
     // before last go
-    const indexBeforeLastPro = lastIndex(u8, pros, hasTwo) orelse 0;
-    if (expected.beforeLastGo != indexBeforeLastPro) {
+    if (expected.beforeLastGo != got.beforeLastGo) {
         out.push(.{
             .moment = .beforeLastGo,
             .expected = sh.indexToHoraire(expected.beforeLastGo + 1),
-            .got = sh.indexToHoraire(@intCast(indexBeforeLastPro + 1)),
+            .got = sh.indexToHoraire(got.beforeLastGo + 1),
         });
     }
 
     return out;
+}
+
+fn ri(start: sh.TimeIndex, end: sh.TimeIndex) sh.Range {
+    return .{ .start = sh.indexToHoraire(start), .end = sh.indexToHoraire(end) };
 }
 
 test "check pros arrivals" {
@@ -960,11 +1004,12 @@ test "check pros arrivals" {
         cc(0, 0, 0),
         cc(0, 0, 0),
     };
-    try std.testing.expect(checkProsArrivals(enfants2, &[_]u8{ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 }).len == 0);
-    try std.testing.expect(checkProsArrivals(enfants2, &[_]u8{ 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 }).len == 0);
-    try std.testing.expect(checkProsArrivals(enfants2, &[_]u8{ 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 }).len == 1);
-    try std.testing.expect(checkProsArrivals(enfants2, &[_]u8{ 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 }).len == 1);
-    try std.testing.expect(checkProsArrivals(enfants2, &[_]u8{ 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0 }).len == 2);
+
+    try std.testing.expect(checkProsArrivals(enfants2, &[_]sh.Range{ri(1, 12)}).len == 0);
+    try std.testing.expect(checkProsArrivals(enfants2, &[_]sh.Range{ ri(1, 12), ri(1, 2) }).len == 0);
+    try std.testing.expect(checkProsArrivals(enfants2, &[_]sh.Range{ ri(0, 12), ri(1, 2) }).len == 1);
+    try std.testing.expect(checkProsArrivals(enfants2, &[_]sh.Range{ri(2, 12)}).len == 1);
+    try std.testing.expect(checkProsArrivals(enfants2, &[_]sh.Range{ri(2, 10)}).len == 2);
 
     // with more than 3
     const enfants5 = &[_]ChildrenCount{
@@ -985,14 +1030,15 @@ test "check pros arrivals" {
         cc(0, 0, 0), // 14
         cc(0, 0, 0), // 15
     };
-    try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0 }).len == 0);
-    try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0 }).len == 1);
-    try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0 }).len == 2);
-    try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0 }).len == 3);
-    try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 0 }).len == 3);
-    try std.testing.expect(checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0 }).len == 4);
 
-    const diags = checkProsArrivals(enfants5, &[_]u8{ 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 0 });
+    try std.testing.expect(checkProsArrivals(enfants5, &[_]sh.Range{ ri(1, 14), ri(4, 11) }).len == 0);
+    try std.testing.expect(checkProsArrivals(enfants5, &[_]sh.Range{ ri(1, 14), ri(5, 11) }).len == 1);
+    try std.testing.expect(checkProsArrivals(enfants5, &[_]sh.Range{ ri(2, 14), ri(5, 11) }).len == 2);
+    try std.testing.expect(checkProsArrivals(enfants5, &[_]sh.Range{ ri(2, 13), ri(5, 11) }).len == 3);
+    try std.testing.expect(checkProsArrivals(enfants5, &[_]sh.Range{ ri(2, 15), ri(5, 11) }).len == 3);
+    try std.testing.expect(checkProsArrivals(enfants5, &[_]sh.Range{ ri(2, 15), ri(5, 10) }).len == 4);
+
+    const diags = checkProsArrivals(enfants5, &[_]sh.Range{ ri(2, 15), ri(5, 12) });
     try std.testing.expect(diags.len == 4);
     // check the depart horaire is correct
     const first, const last, const second, const secondLast = diags.buffer;
@@ -1157,21 +1203,7 @@ const NotEnoughSleep = struct {
     gotLendemain: sh.Horaire,
 };
 
-fn FixedBuffer(comptime T: type, comptime N: u8) type {
-    return struct {
-        buffer: [N]T = @splat(undefined),
-        len: u8 = 0,
-
-        const Self = @This();
-
-        fn push(self: *Self, v: T) void {
-            self.buffer[self.len] = v;
-            self.len += 1;
-        }
-    };
-}
-
-const ReposCheck = FixedBuffer(NotEnoughSleep, 4);
+const ReposCheck = sh.FixedBuffer(NotEnoughSleep, 4);
 
 fn checkRepos(pro: sh.WeekPro) ReposCheck {
     var out = ReposCheck{};
@@ -1226,18 +1258,7 @@ test "check repos" {
     };
     const diags = checkRepos(weekPro);
     try std.testing.expect(diags.len == 1);
-    try std.testing.expectEqual(ho(7, 15), diags.buffer[0].expectedLendemain);
-}
-
-// returns a shallow copy of `pros`, sorted according to
-// the creneau order (ouverture, matin, soir, fermeture)
-pub fn sortByCreneau(comptime T: type, pros: [4]T, positions: [4]sh.Creneau) [4]T {
-    return .{
-        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.o) orelse 0],
-        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.m) orelse 0],
-        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.s) orelse 0],
-        pros[std.mem.indexOfScalar(sh.Creneau, &positions, sh.Creneau.f) orelse 0],
-    };
+    try std.testing.expectEqual(ho(7, 15), diags.slice()[0].expectedLendemain);
 }
 
 const WrongRoulement = struct {
@@ -1246,7 +1267,7 @@ const WrongRoulement = struct {
     gotOrder: [4]sh.string,
 };
 
-const RoulementCheck = FixedBuffer(WrongRoulement, 5);
+const RoulementCheck = sh.FixedBuffer(WrongRoulement, 5);
 
 fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck {
     if (week.prosHoraires.len < 4) return RoulementCheck{}; // dont bother to guess
@@ -1256,20 +1277,23 @@ fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck 
 
     const proIndex = struct {
         presence: sh.Range,
-        index: u8,
+        index: usize,
 
         const Self = @This();
 
         // returns true if h1 < h2
         pub fn isLess(_: void, h1: Self, h2: Self) bool {
-            return sh.Horaire.compare(h1.presence.start, h2.presence.start) == -1;
+            const start = sh.Horaire.compare(h1.presence.start, h2.presence.start);
+            if (start != 0) return start == -1;
+            // if the arrivals are the same, compare departures
+            return sh.Horaire.compare(h1.presence.end, h2.presence.end) == -1;
         }
     };
 
     var out = RoulementCheck{};
     for (0..5) |dayI| {
         // expected
-        const exp = sortByCreneau(u8, [_]u8{ 0, 1, 2, 3 }, expectedRoulement[dayI]);
+        const exp = sh.creneauxOrder(expectedRoulement[dayI]);
         // real
         var prosForDay: [4]proIndex = @splat(undefined);
         var allAway = true;
@@ -1289,7 +1313,7 @@ fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck 
         std.mem.sortUnstable(proIndex, &prosForDay, {}, proIndex.isLess);
 
         const got = .{ prosForDay[0].index, prosForDay[1].index, prosForDay[2].index, prosForDay[3].index };
-        if (!std.mem.eql(u8, &exp, &got)) {
+        if (!std.mem.eql(usize, &exp, &got)) {
             out.push(.{
                 .dayIndex = @intCast(dayI),
                 .expectedOrder = .{ pros[exp[0]].pro.prenom, pros[exp[1]].pro.prenom, pros[exp[2]].pro.prenom, pros[exp[3]].pro.prenom },
@@ -1425,6 +1449,62 @@ test "check roulements" {
 
     const diagsErr = checkRoulements(week1, roulements1);
     try std.testing.expect(diagsErr.len == 2);
+}
+
+// be careful with arrivals and pauses : the "pro count" approach is then broken
+test "proArrivals" {
+    const gpa = std.testing.allocator;
+
+    const D = struct {
+        fn child(depart: sh.Horaire) sh.WeekOf(?sh.ChildDay) {
+            return .{ .{ .horaires = r(ho(13, 0), depart) }, null, null, null, null };
+        }
+
+        fn pro(presence: sh.Range, pause: sh.Range) sh.WeekPro {
+            return .{
+                .pro = .{},
+                .horaires = [_]sh.HoraireTravail{ .{
+                    .presence = presence,
+                    .pause = pause,
+                }, .{
+                    .presence = sh.Range.empty(),
+                    .pause = sh.Range.empty(),
+                }, .{
+                    .presence = sh.Range.empty(),
+                    .pause = sh.Range.empty(),
+                }, .{
+                    .presence = sh.Range.empty(),
+                    .pause = sh.Range.empty(),
+                }, .{
+                    .presence = sh.Range.empty(),
+                    .pause = sh.Range.empty(),
+                } },
+            };
+        }
+    };
+
+    var childrenL = [_]sh.ChildCreneaux{
+        .{ .child = .{}, .creneaux = @constCast(&[_]sh.WeekOf(?sh.ChildDay){D.child(ho(15, 15))}) },
+        .{ .child = .{}, .creneaux = @constCast(&[_]sh.WeekOf(?sh.ChildDay){D.child(ho(19, 0))}) },
+        .{ .child = .{}, .creneaux = @constCast(&[_]sh.WeekOf(?sh.ChildDay){D.child(ho(19, 0))}) },
+        .{ .child = .{}, .creneaux = @constCast(&[_]sh.WeekOf(?sh.ChildDay){D.child(ho(19, 0))}) },
+    };
+    const children = sh.ChildrenPlanning{
+        .children = &childrenL,
+        .weekCount = 1,
+    };
+    const pros = sh.ProsPlanning{ .weeks = &[_]sh.WeekPros{.{
+        .week = 0,
+        .prosHoraires = &[_]sh.WeekPro{
+            D.pro(r(ho(12, 45), ho(15, 30)), r(ho(14, 0), ho(14, 30))),
+            D.pro(r(ho(12, 45), ho(19, 30)), r(ho(15, 0), ho(15, 30))),
+        },
+        .roulement = 0,
+    }} };
+
+    const diags = try checkPlanning(gpa, children, pros, null);
+    defer gpa.free(diags);
+    try std.testing.expectEqual(1, diags.len);
 }
 
 test "check sample 0" {

@@ -60,7 +60,7 @@ test "check" {
 
 pub const CreateIn = struct {
     children: sh.ChildrenPlanning,
-    roulements: sh.Roulements,
+    roulements: sh.RoulementsAndPros,
     firstWeekRoulement: usize,
 };
 
@@ -87,7 +87,10 @@ test "create" {
 
     try std.json.Stringify.value(CreateIn{
         .children = .{ .children = &[_]sh.ChildCreneaux{}, .weekCount = 0 },
-        .roulements = .{ .weeks = &[_]sh.WeekOf([4]sh.Creneau){} },
+        .roulements = .{
+            .pros = @splat(sh.Pro{}),
+            .roulements = .{ .weeks = &[_]sh.WeekOf([4]sh.Creneau){} },
+        },
         .firstWeekRoulement = 0,
     }, .{}, &buffer.writer);
     const jsonIn = buffer.written();

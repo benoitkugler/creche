@@ -3,11 +3,13 @@ const Allocator = std.mem.Allocator;
 const sh = @import("shared.zig");
 const check = @import("check.zig");
 
-const WeekHoraires = sh.WeekOf([4]sh.HoraireTravail);
+const HorairesT4 = [4]sh.HoraireTravail;
+
+const WeekHoraires = sh.WeekOf(HorairesT4);
 
 pub const CreatedWeek = struct {
     roulement: usize,
-    horaires: WeekHoraires,
+    horaires: [4]sh.WeekOf(sh.HoraireTravail), // for each pro
 };
 
 pub const CreatedPlanning = struct {
@@ -18,22 +20,22 @@ const CreatePlanningError = error{ConstraintsNotResolved};
 
 // `firstWeekRoulement` is the (0-based) index in `roulements` of the
 //first week defined in `children`
-pub fn createPlanning(gpa: Allocator, children: sh.ChildrenPlanning, roulements: sh.Roulements, firstWeekRoulement: usize) !CreatedPlanning {
+pub fn createPlanning(gpa: Allocator, children: sh.ChildrenPlanning, roulements: sh.RoulementsAndPros, firstWeekRoulement: usize) !sh.ProsPlanning {
     var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
 
-    const R = roulements.weeks.len;
+    const R = roulements.roulements.weeks.len;
     const childrenCounts = check.buildChildrenCount(arena.allocator(), children);
 
-    var weeks = try gpa.alloc(CreatedWeek, childrenCounts.len);
+    var weeks = try gpa.alloc(sh.WeekPros, childrenCounts.len);
 
     for (childrenCounts, 0..) |weekChildren, weekI| {
         const roulementI = (firstWeekRoulement + weekI) % R;
-        const weekRoulement = roulements.weeks[roulementI];
+        const weekRoulement = roulements.roulements.weeks[roulementI];
 
         // for a given week, we compute all candidate for each day,
         // and we then choose the best week regarding to overall work duration
-        var candidatesByDay: sh.WeekOf([][4]sh.HoraireTravail) = undefined;
+        var candidatesByDay: sh.WeekOf([]HorairesT4) = undefined;
         for (0..5) |dayI| {
             // std.debug.print("generating horaires for week {} day {}\n", .{ weekI, dayI });
 
@@ -42,9 +44,17 @@ pub fn createPlanning(gpa: Allocator, children: sh.ChildrenPlanning, roulements:
                 return CreatePlanningError.ConstraintsNotResolved;
             }
 
+            // std.debug.print("found {} configs\n", .{dayCandidates.len});
+
             // apply rotation from roulements
+            const creneaux = weekRoulement[dayI];
             for (dayCandidates, 0..) |value, i| {
-                dayCandidates[i] = check.sortByCreneau(sh.HoraireTravail, value, weekRoulement[dayI]);
+                dayCandidates[i] = .{
+                    value[@intFromEnum(creneaux[0])],
+                    value[@intFromEnum(creneaux[1])],
+                    value[@intFromEnum(creneaux[2])],
+                    value[@intFromEnum(creneaux[3])],
+                };
             }
 
             candidatesByDay[dayI] = dayCandidates;
@@ -72,16 +82,37 @@ pub fn createPlanning(gpa: Allocator, children: sh.ChildrenPlanning, roulements:
             }
         }
 
-        weeks[weekI] = CreatedWeek{ .roulement = roulementI, .horaires = bestWeek };
+        // printHoraires(&bestWeek);
+
+        // convert to pro first
+        const pros = try gpa.alloc(sh.WeekPro, 4);
+        for (roulements.pros, 0..) |pro, i| {
+            pros[i].pro = pro;
+        }
+        for (bestWeek, 0..) |day, dayI| {
+            for (day, 0..) |h, proI| {
+                pros[proI].horaires[dayI] = h;
+            }
+        }
+        weeks[weekI] = sh.WeekPros{ .week = weekI, .prosHoraires = pros, .roulement = roulementI, .reunion = null };
     }
 
-    return .{ .weeks = weeks };
+    return .{ .firstMonday = children.firstMonday, .weeks = weeks };
+}
+
+fn printHoraires(l: []const HorairesT4) void {
+    for (l) |value| {
+        for (value) |pro| {
+            std.debug.print("{s} ", .{pro.format()});
+        }
+        std.debug.print("\n", .{});
+    }
 }
 
 test "createPlanning" {
     const gpa = std.testing.allocator;
 
-    const parsedR = try loadJSON(sh.Roulements, "testdata/roulements.json");
+    const parsedR = try loadJSON(sh.RoulementsAndPros, "testdata/roulements.json");
     defer parsedR.deinit();
     const roulements = parsedR.value;
 
@@ -103,20 +134,45 @@ test "createPlanning" {
     }
 
     var start = try std.time.Timer.start();
-    const created0 = try createPlanning(gpa, children0, roulements, 1);
-    defer gpa.free(created0.weeks);
+    var created0 = try createPlanning(gpa, children0, roulements, 1);
+    defer created0.deinit(gpa);
     std.debug.print("Month 0, time spent {} ms\n\n", .{start.read() / 1000000});
-    try std.testing.expectEqual(.{ 1935, 2025, 1965, 2070 }, weekTravailDuration(created0.weeks[0].horaires));
 
     start = try std.time.Timer.start();
-    const created1 = try createPlanning(gpa, children1, roulements, 1);
-    defer gpa.free(created1.weeks);
+    var created1 = try createPlanning(gpa, children1, roulements, 1);
+    defer created1.deinit(gpa);
     std.debug.print("Month 1, time spent {} ms\n\n", .{start.read() / 1000000});
 
     start = try std.time.Timer.start();
-    const created2 = try createPlanning(gpa, children2, roulements, 2);
-    defer gpa.free(created2.weeks);
+    var created2 = try createPlanning(gpa, children2, roulements, 2);
+    defer created2.deinit(gpa);
     std.debug.print("Month 2, time spent {} ms\n\n", .{start.read() / 1000000});
+
+    const diags0 = try check.checkPlanning(gpa, children0, created0, roulements.roulements);
+    defer gpa.free(diags0);
+    try assertCheckKind(diags0);
+
+    const diags1 = try check.checkPlanning(gpa, children1, created1, roulements.roulements);
+    defer gpa.free(diags1);
+    try assertCheckKind(diags1);
+
+    const diags2 = try check.checkPlanning(gpa, children2, created2, roulements.roulements);
+    defer gpa.free(diags2);
+    try assertCheckKind(diags2);
+}
+
+const Err = error{wrongCheck};
+fn assertCheckKind(diags: []check.TimeCheck) !void {
+    for (diags) |value| {
+        switch (value.check) {
+            // only check accepted
+            .notEnoughSleep => {},
+            else => {
+                std.debug.print("at {any}, found {any}\n", .{ value.dayIndex, value.check });
+                return Err.wrongCheck;
+            },
+        }
+    }
 }
 
 // lower is better
@@ -189,7 +245,7 @@ fn pauseDuration(dayDuration: sh.TimeIndex) u8 {
     return 30;
 }
 
-const HorairesBuffer = [pausesCombinationCount][4]sh.HoraireTravail;
+const HorairesBuffer = [pausesCombinationCount]HorairesT4;
 
 // dayDurations are expressed in grid index, and in "rotation order"
 // the returned slices are in "rotation order"
@@ -291,21 +347,23 @@ fn allDurations(gpa: Allocator, min: sh.TimeIndex, max: sh.TimeIndex) std.ArrayL
     return buffer;
 }
 
-// return the length of valid horaires
+// always fully mutate [sratch]
+// valid horaires are written in [out] and a slice of it is returned
 fn computeValidHoraires(
     children: check.ChildrenCountDay,
     arrivals: check.Arrivals,
     detachements: [4](?sh.Detachement),
     reunionRange: ?sh.Range,
     durations: Durations,
-    buffer: *HorairesBuffer,
-) usize {
+    scratch: *HorairesBuffer,
+    out: *HorairesBuffer,
+) []const HorairesT4 {
     // try every pauses ...
-    generateHorairesFromDurations(arrivals, durations, buffer);
+    generateHorairesFromDurations(arrivals, durations, scratch);
 
     // ... and check if we have (at least) a solution that satisifies every "day by day" checks
     var currentIndex: usize = 0;
-    for (buffer) |candidate| {
+    for (scratch) |candidate| {
         const pros = check.buildProsCountDay(&candidate, &detachements);
         const checkChildrenCount = check.checkChildrenCountDay(children, pros, reunionRange);
 
@@ -321,12 +379,12 @@ fn computeValidHoraires(
             }
         }
         if (ok1 and ok2) {
-            buffer[currentIndex] = candidate;
+            out[currentIndex] = candidate;
             currentIndex += 1;
         }
     }
 
-    return currentIndex;
+    return out[0..currentIndex];
 }
 
 fn overThresold(l: []const sh.TimeIndex, threshold: sh.TimeIndex) bool {
@@ -339,7 +397,7 @@ fn overThresold(l: []const sh.TimeIndex, threshold: sh.TimeIndex) bool {
 }
 
 // return horaires passing children count and pauses checks;
-pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][4]sh.HoraireTravail {
+pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) []HorairesT4 {
     // TODO: maybe support
     const detachements: [4](?sh.Detachement) = .{ null, null, null, null };
     const reunionRange: ?sh.Range = null;
@@ -348,7 +406,7 @@ pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][
 
     // handle 0 children
     if (arrivals.firstArrival == sh.TimeIndexEmpty) {
-        const out = gpa.alloc([4]sh.HoraireTravail, 1) catch unreachable;
+        const out = gpa.alloc(HorairesT4, 1) catch unreachable;
         out[0] = @splat(sh.HoraireTravail{ .presence = sh.Range.empty(), .pause = sh.Range.empty() });
         return out;
     }
@@ -363,11 +421,12 @@ pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][
     //    - in between : it may be helpful to reduce work to also reduce pauses
 
     var selectedDurations: ?Durations = null;
-    var selectedHoraires: [][4]sh.HoraireTravail = &.{};
+    var selectedHoraires: []const HorairesT4 = &.{};
 
     // we first brute-force search between thresholdDuration and maxDuration,
     // less work first
-    var buffer: HorairesBuffer = @splat(@splat(.{ .presence = sh.Range.empty(), .pause = sh.Range.empty() }));
+    var scratch: HorairesBuffer = @splat(@splat(.{ .presence = sh.Range.empty(), .pause = sh.Range.empty() }));
+    var validHoraires: HorairesBuffer = @splat(@splat(.{ .presence = sh.Range.empty(), .pause = sh.Range.empty() }));
 
     var candidates = allDurations(gpa, thresholdDuration, maxDuration);
     defer candidates.deinit(gpa);
@@ -375,12 +434,12 @@ pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][
     // std.debug.print("testing {} candidates\n", .{candidates.items.len});
 
     for (candidates.items) |durations| {
-        const validHorairesLength = computeValidHoraires(children, arrivals, detachements, reunionRange, durations, &buffer);
-        if (validHorairesLength != 0) {
+        const slice = computeValidHoraires(children, arrivals, detachements, reunionRange, durations, &scratch, &validHoraires);
+        if (slice.len != 0) {
             // we have found a first (list of) solution
             // save it, but try with the "under thresholdDuration" durations
             selectedDurations = durations;
-            selectedHoraires = buffer[0..validHorairesLength];
+            selectedHoraires = slice;
             break;
         }
     }
@@ -389,36 +448,33 @@ pub fn generateDayHoraires(gpa: Allocator, children: check.ChildrenCountDay) [][
 
     // now try to reduce work for duration under thresholdDuration
     // (other has been tried)
-    var tmp = [4]usize{ 0, 0, 0, 0 };
-    var prosToReduce = std.ArrayList(usize).initBuffer(&tmp);
+    var tmp = sh.FixedBuffer(usize, 4){};
     for (selectedDurationsM, 0..) |value, i| {
         if (value == thresholdDuration) {
-            prosToReduce.appendBounded(i) catch unreachable;
+            tmp.push(i);
         }
     }
+    const prosToReduce = tmp.slice();
 
-    if (prosToReduce.items.len == 0) return selectedHoraires; // can't do better
+    if (prosToReduce.len != 0) {
+        var proCursor: usize = 0;
+        while (overThresold(&selectedDurationsM, minDuration)) {
+            const slice = computeValidHoraires(children, arrivals, detachements, reunionRange, selectedDurationsM, &scratch, &validHoraires);
 
-    var proCursor: usize = 0;
-    while (overThresold(&selectedDurationsM, minDuration)) {
-        const validHorairesLength = computeValidHoraires(children, arrivals, detachements, reunionRange, selectedDurationsM, &buffer);
-
-        if (validHorairesLength != 0) {
-            selectedHoraires = buffer[0..validHorairesLength];
-            // If we succeed, try with less work
-            const indexToReduce = prosToReduce.items[proCursor % prosToReduce.items.len];
-            selectedDurationsM[indexToReduce] -= 3;
-            proCursor += 1;
-        } else {
-            break;
+            if (slice.len != 0) {
+                selectedHoraires = slice;
+                // If we succeed, try with less work
+                const indexToReduce = prosToReduce[proCursor % prosToReduce.len];
+                selectedDurationsM[indexToReduce] -= 3;
+                proCursor += 1;
+            } else {
+                break;
+            }
         }
     }
 
     // alloc and copy
-    const out = gpa.alloc([4]sh.HoraireTravail, selectedHoraires.len) catch unreachable;
-    @memcpy(out, selectedHoraires);
-
-    return out;
+    return gpa.dupe(HorairesT4, selectedHoraires) catch unreachable;
 }
 
 test "selectDayHoraires Simple" {
@@ -445,7 +501,8 @@ fn loadJSON(comptime T: type, path: sh.string) !std.json.Parsed(T) {
 
     const file = try std.fs.cwd().readFileAlloc(gpa, path, std.math.maxInt(usize));
     defer gpa.free(file);
-    return try std.json.parseFromSlice(T, gpa, file, .{ .ignore_unknown_fields = true });
+
+    return try std.json.parseFromSlice(T, gpa, file, .{ .ignore_unknown_fields = true, .allocate = .alloc_always });
 }
 
 test "selectDayHoraires Real" {
@@ -479,5 +536,5 @@ test "selectDayHoraires Real" {
     defer gpa.free(out3);
     try std.testing.expectEqual(1, out3.len);
 
-    std.debug.print("Time spent {} ms\n", .{start.read() / 1000000});
+    std.debug.print("Week 1 day 0, time spent {} ms\n", .{start.read() / 1000000});
 }
