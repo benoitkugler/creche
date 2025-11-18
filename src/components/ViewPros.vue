@@ -4,7 +4,9 @@
     :subtitle="planningMonth(props.planningChildren)"
   >
     <template #append>
-      <v-btn @click="showSelectTask = true"> Choisir une tâche </v-btn>
+      <v-btn @click="showSelectTask = true" prepend-icon="mdi-assistant">
+        Choisir une tâche
+      </v-btn>
       <v-divider vertical thickness="2" class="mx-1"></v-divider>
       <v-btn prepend-icon="mdi-download" @click="exportPlanning"
         >Télécharger</v-btn
@@ -16,8 +18,8 @@
         :planning-children="props.planningChildren"
         :planning-pros="props.planningPros"
         :roulements="props.roulements"
-        @edit-detachements="(w, d) => emit('editDetachements', w, d)"
         @edit-horaires="(i, h) => emit('editHoraires', i, h)"
+        @edit-misc="(w, r, d) => emit('editMisc', w, r, d)"
       ></ProsCalendar>
     </v-card-text>
     <v-card-actions>
@@ -73,6 +75,7 @@ import type {
   Detachement,
   HoraireTravail,
   ProsPlanning,
+  Reunion,
   Roulements,
 } from "@/logic/types";
 import TaskChoice from "./TaskChoice.vue";
@@ -103,8 +106,9 @@ const emit = defineEmits<{
   ): void;
   (e: "editHoraires", index: DayIndex, horaires: HoraireTravail[]): void;
   (
-    e: "editDetachements",
+    e: "editMisc",
     week: int,
+    reunion: Reunion | null,
     detachements: (Detachement | null)[]
   ): void;
 

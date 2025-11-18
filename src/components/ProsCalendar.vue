@@ -28,9 +28,7 @@
             (d, v) =>
               emit('editHoraires', { week: planningWeek.week, day: d }, v)
           "
-          @edit-detachements="
-            (v) => emit('editDetachements', planningWeek.week, v)
-          "
+          @edit-misc="(r, d) => emit('editMisc', planningWeek.week, r, d)"
         ></ProsSemaineView>
       </v-tabs-window-item>
     </v-tabs-window>
@@ -48,6 +46,7 @@ import type {
   Diagnostic,
   HoraireTravail,
   ProsPlanning,
+  Reunion,
   Roulements,
 } from "@/logic/types";
 import { Wasm } from "@/logic/wasm";
@@ -61,8 +60,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "editHoraires", index: DayIndex, horaires: HoraireTravail[]): void;
   (
-    e: "editDetachements",
+    e: "editMisc",
     week: int,
+    reunion: Reunion | null,
     detachements: (Detachement | null)[]
   ): void;
 }>();

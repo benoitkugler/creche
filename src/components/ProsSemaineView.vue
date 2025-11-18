@@ -158,8 +158,8 @@
         :first-monday="props.firstMonday"
         :planning="props.planning"
         @save="
-          (v) => {
-            emit('editDetachements', v);
+          (r, d) => {
+            emit('editMisc', r, d);
             showEditCreneaux = false;
           }
         "
@@ -178,6 +178,7 @@ import type {
   Detachement,
   Diagnostic,
   HoraireTravail,
+  Reunion,
   WeekPros,
 } from "@/logic/types";
 
@@ -189,7 +190,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "editHoraires", dayIndex: int, horaires: HoraireTravail[]): void;
-  (e: "editDetachements", detachements: (Detachement | null)[]): void;
+  (
+    e: "editMisc",
+    reunion: Reunion | null,
+    detachements: (Detachement | null)[]
+  ): void;
 }>();
 
 function byDay(day: int) {

@@ -32,7 +32,7 @@
         }
       "
       @edit-horaires="editHorairesPros"
-      @edit-detachements="editDetachementsPros"
+      @edit-misc="editMiscPros"
       @go-back="step = 'view-children'"
     ></ViewPros>
 
@@ -56,6 +56,7 @@ import type {
   Detachement,
   HoraireTravail,
   ProsPlanning,
+  Reunion,
   Roulements,
 } from "./logic/types";
 import ViewChildren from "./components/ViewChildren.vue";
@@ -117,12 +118,20 @@ function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
   save();
 }
 
-function editDetachementsPros(week: int, detachements: (Detachement | null)[]) {
+function editMiscPros(
+  week: int,
+  reunion: Reunion | null,
+  detachements: (Detachement | null)[]
+) {
   if (!prosPlanning.value) return;
-  const l = prosPlanning.value.weeks[week].prosHoraires;
+  const weekPro = prosPlanning.value.weeks[week];
+
+  const l = weekPro.prosHoraires;
   if (l.length != detachements.length) return; // should not happen
+
+  weekPro.reunion = reunion;
   detachements.forEach((v, i) => (l[i].detachement = v));
-  successMessage.value = "Détachements modifiés avec succès.";
+  successMessage.value = "Créneaux modifiés avec succès.";
   save();
 }
 </script>

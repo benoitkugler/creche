@@ -1,24 +1,36 @@
 <template>
-  <v-card title="Créneaux de la semaine">
+  <v-card title="Réunion et détachements">
     <v-card-text>
       <v-card subtitle="Réunion" class="my-2">
         <v-card-text>
-          <template v-if="props.planning.reunion">
-            {{
-              computeDate(
-                props.firstMonday,
-                { week: props.planning.week, day: props.planning.reunion.day },
-                props.planning.reunion.horaire
-              ).toLocaleString("fr", {
-                weekday: "long",
-                day: "2-digit",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            }}
+          <template v-if="inner.reunion">
+            <v-row>
+              <v-col>
+                <DayField v-model="inner.reunion.day"></DayField>
+              </v-col>
+              <v-col>
+                <HoraireField
+                  label="Début"
+                  v-model="inner.reunion.horaire"
+                ></HoraireField>
+              </v-col>
+              <v-col cols="auto" align-self="center">
+                <v-btn icon @click="inner.reunion = null" size="small">
+                  <v-icon color="red">mdi-delete</v-icon>
+                </v-btn>
+              </v-col>
+            </v-row>
           </template>
-          <template v-else> Aucune réunion d'équipe cette semaine. </template>
+          <template v-else>
+            <v-row justify="space-between">
+              <v-col> Aucune réunion d'équipe cette semaine. </v-col>
+              <v-col cols="auto">
+                <v-btn size="small" prepend-icon="mdi-plus" @click="addReunion"
+                  >Ajouter une réunion</v-btn
+                >
+              </v-col>
+            </v-row>
+          </template>
         </v-card-text>
       </v-card>
 
@@ -32,44 +44,42 @@
             <v-col align-self="center">
               {{ pro.pro.prenom }}
             </v-col>
-            <template v-if="inner[index]">
+            <template v-if="inner.detachements[index]">
               <v-col>
-                <v-select
-                  label="Jour de la semaine"
-                  :items="[
-                    { title: 'Lundi', value: 0 },
-                    { title: 'Mardi', value: 1 },
-                    { title: 'Mercredi', value: 2 },
-                    { title: 'Jeudi', value: 3 },
-                    { title: 'Vendredi', value: 4 },
-                  ]"
-                  v-model="inner[index].dayIndex"
-                  hide-details
-                ></v-select>
+                <DayField
+                  v-model="inner.detachements[index].dayIndex"
+                ></DayField>
               </v-col>
               <v-col>
                 <HoraireField
                   label="Détachement (début)"
-                  v-model="inner[index].horaires.start"
+                  v-model="inner.detachements[index].horaires.start"
                 ></HoraireField>
               </v-col>
               <v-col>
                 <HoraireField
                   label="Détachement (fin)"
-                  v-model="inner[index].horaires.end"
+                  v-model="inner.detachements[index].horaires.end"
                 ></HoraireField>
               </v-col>
               <v-col align-self="center" cols="auto">
-                <v-btn icon @click="inner[index] = null" size="small">
+                <v-btn
+                  icon
+                  @click="inner.detachements[index] = null"
+                  size="small"
+                >
                   <v-icon color="red">mdi-delete</v-icon>
                 </v-btn>
               </v-col>
             </template>
             <template v-else>
-              <v-col>
+              <v-col cols="auto">
                 <v-btn
                   @click="
-                    inner[index] = { dayIndex: 0, horaires: emptyRange() }
+                    inner.detachements[index] = {
+                      dayIndex: 0,
+                      horaires: emptyRange(),
+                    }
                   "
                   size="small"
                 >
@@ -86,7 +96,10 @@
     </v-card-text>
 
     <v-card-actions>
-      <v-btn @click="emit('save', inner)" :disabled="!isValid">
+      <v-btn
+        @click="emit('save', inner.reunion, inner.detachements)"
+        :disabled="!isValid"
+      >
         Enregistrer</v-btn
       >
     </v-card-actions>
@@ -97,7 +110,8 @@
 import { computeDate, copy, emptyRange, rangeIncludes } from "@/logic/shared";
 import { computed, ref } from "vue";
 import HoraireField from "./HoraireField.vue";
-import type { Detachement, WeekPros } from "@/logic/types";
+import type { Detachement, Reunion, WeekPros } from "@/logic/types";
+import DayField from "./DayField.vue";
 
 const props = defineProps<{
   firstMonday: Date;
@@ -105,14 +119,21 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "save", detachements: (Detachement | null)[]): void;
+  (
+    e: "save",
+    reunion: Reunion | null,
+    detachements: (Detachement | null)[]
+  ): void;
 }>();
 
-const inner = ref(copy(props.planning.prosHoraires.map((p) => p.detachement)));
+const inner = ref({
+  reunion: props.planning.reunion,
+  detachements: copy(props.planning.prosHoraires.map((p) => p.detachement)),
+});
 
 const isValid = computed(() =>
   props.planning.prosHoraires.every((pro, index) => {
-    const detachement = inner.value[index];
+    const detachement = inner.value.detachements[index];
     if (!detachement) return true;
     return rangeIncludes(
       pro.horaires[detachement.dayIndex].presence,
@@ -120,6 +141,10 @@ const isValid = computed(() =>
     );
   })
 );
+
+function addReunion() {
+  inner.value.reunion = { day: 1, horaire: { heure: 13, minute: 30 } };
+}
 </script>
 
 <style></style>
