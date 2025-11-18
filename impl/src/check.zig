@@ -77,7 +77,11 @@ const Check = union(enum) {
             },
             .missingProAtReunion => |val| {
                 title = "Réunion hebdomadaire";
-                try w.writer.print("Pro. manquante sur le créneau de réunion : {s}.", .{val.missing.prenom});
+                if (val.missingCount == 1) {
+                    try w.writer.print("Pro. manquante sur le créneau de réunion : {s}.", .{val.missing.prenom});
+                } else {
+                    try w.writer.print("{} pros manquantes sur le créneau de réunion ({s}, ...).", .{ val.missingCount, val.missing.prenom });
+                }
             },
             .notEnoughSleep => |val| {
                 title = "Temps de repos";
@@ -1063,6 +1067,7 @@ test "check pros arrivals" {
 const MissingProAtReunion = struct {
     day: u8,
     horaireIndex: sh.TimeIndex,
+    missingCount: usize,
     missing: sh.Pro,
 };
 
@@ -1070,8 +1075,10 @@ fn checkReunion(semaine: sh.WeekPros) ?MissingProAtReunion {
     const reunion = semaine.reunion orelse return null;
 
     const reunionRange = reunion.range();
+    var missingCount: usize = 0;
+    var missingIndex: ?usize = null;
     // check each pro is present and not in pause
-    for (semaine.prosHoraires) |pro| {
+    for (semaine.prosHoraires, 0..) |pro, i| {
         const proAtDayReunion = pro.horaires[reunion.day];
         // vacations : OK
         if (proAtDayReunion.presence.isEmpty()) {
@@ -1082,12 +1089,19 @@ fn checkReunion(semaine: sh.WeekPros) ?MissingProAtReunion {
         {
             continue; // OK
         }
+        missingCount += 1;
+        missingIndex = i;
+    }
+
+    if (missingIndex) |i| {
         return .{
             .day = reunion.day,
             .horaireIndex = sh.horaireToIndex(reunion.horaire),
-            .missing = pro.pro,
+            .missingCount = missingCount,
+            .missing = semaine.prosHoraires[i].pro,
         };
     }
+
     return null;
 }
 
@@ -1190,6 +1204,7 @@ test "check reunion" {
     try std.testing.expect(diag_ != null);
     const diag = diag_ orelse unreachable;
     try std.testing.expect(diag.day == 1);
+    try std.testing.expect(diag.missingCount == 1);
     try std.testing.expectEqualStrings("pro2", diag.missing.prenom);
     try std.testing.expect(diag.horaireIndex == sh.horaireToIndex(ho(13, 30)));
 
