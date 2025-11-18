@@ -455,5 +455,6 @@ export async function writeExcelPros(planning: ProsPlanning, month: string) {
   }
 
   // write to a new buffer
-  return await workbook.xlsx.writeBuffer();
+  const out: ArrayBuffer = await workbook.xlsx.writeBuffer();
+  return out;
 }

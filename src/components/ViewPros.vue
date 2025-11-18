@@ -5,6 +5,10 @@
   >
     <template #append>
       <v-btn @click="showSelectTask = true"> Choisir une tâche </v-btn>
+      <v-divider vertical thickness="2" class="mx-1"></v-divider>
+      <v-btn prepend-icon="mdi-download" @click="exportPlanning"
+        >Télécharger</v-btn
+      >
     </template>
     <v-card-text>
       <ProsCalendar
@@ -76,6 +80,7 @@ import ProsCalendar from "./ProsCalendar.vue";
 import { planningMonth } from "@/logic/children";
 import { Wasm } from "@/logic/wasm";
 import type { ParsedRoulements } from "@/logic/roulement";
+import { writeExcelPros } from "@/logic/pros";
 
 const props = defineProps<{
   planningChildren: ChildrenPlanning;
@@ -137,6 +142,30 @@ async function createPlanning(
     showCreateLoader.value = false;
     emit("update", created, roulements.roulements);
   }
+}
+
+async function exportPlanning() {
+  if (!props.planningPros) return;
+  const buffer = await writeExcelPros(
+    props.planningPros,
+    planningMonth(props.planningChildren)
+  );
+  saveBuffer(
+    buffer,
+    `Planning équipe ${planningMonth(props.planningChildren)}.xlsx`
+  );
+}
+
+function saveBuffer(data: ArrayBuffer, fileName: string) {
+  const a = document.createElement("a");
+  document.body.appendChild(a);
+  a.setAttribute("style", "display: none");
+  const blob = new Blob([data], { type: "octet/stream" }),
+    url = window.URL.createObjectURL(blob);
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  window.URL.revokeObjectURL(url);
 }
 </script>
 
