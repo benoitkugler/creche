@@ -1,11 +1,16 @@
+import Excel from "exceljs";
+
 import {
+  computeDate,
   emptyRange,
+  formatHoraire,
   formatRange,
   isError,
   newError,
   parseHoraire,
   parseRange,
   rangeIncludes,
+  rangeIsEmpty,
   readExcelFile,
   type Cell,
   type CellValue,
@@ -242,4 +247,213 @@ function isReunionRow(row: Cell[]): Reunion | error | null {
     return { day, horaire };
   }
   return null;
+}
+
+export async function writeExcelPros(planning: ProsPlanning, month: string) {
+  const workbook = new Excel.Workbook();
+
+  // Set Workbook Properties
+  workbook.creator = "Appli Crèche";
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  const sheet = workbook.addWorksheet("Feuille 1");
+
+  const setCenter = (r: number, c: number) =>
+    (sheet.getCell(r, c).alignment = { horizontal: "center" });
+
+  sheet.getColumn(1).width = 20;
+
+  const columnCount = 17;
+  sheet.addRow([`Planning du personnel - ${month}`]);
+  setCenter(1, 1);
+  sheet.mergeCells(1, 1, 1, columnCount);
+  sheet.getRow(1).height = 25;
+  sheet.getCell(1, 1).style.alignment!.vertical = "middle";
+  sheet.getCell(1, 1).style.font = {
+    bold: true,
+    name: "Calibri",
+  };
+  sheet.addRow([]);
+
+  for (const week of planning.weeks) {
+    const monday = computeDate(planning.firstMonday, {
+      week: week.week,
+      day: 0,
+    });
+    const friday = computeDate(planning.firstMonday, {
+      week: week.week,
+      day: 4,
+    });
+
+    // title row
+    const titleRow = sheet.addRow([
+      `Semaine ${week.roulement + 1} du ${monday.getDate()}/${
+        monday.getMonth() + 1
+      } au ${friday.getDate()}/${friday.getMonth() + 1}/${
+        friday.getFullYear() - 2000
+      }`,
+    ]);
+    setCenter(titleRow.number, 1);
+    sheet.getCell(titleRow.number, 1).style.font = {
+      bold: true,
+      name: "Calibri",
+    };
+    sheet.mergeCells(titleRow.number, 1, titleRow.number, columnCount);
+
+    // days row
+    const daysRow = sheet.addRow([
+      "",
+      "Lundi",
+      "",
+      "",
+      "Mardi",
+      "",
+      "",
+      "Mercredi",
+      "",
+      "",
+      "Jeudi",
+      "",
+      "",
+      "Vendredi",
+      "",
+      "",
+    ]);
+    for (let index = 0; index < 5; index++) {
+      const column = 2 + index * 3;
+      sheet.mergeCells(daysRow.number, column, daysRow.number, column + 2);
+      setCenter(daysRow.number, column);
+      sheet.getCell(daysRow.number, column).style.font = {
+        bold: true,
+        name: "Calibri",
+      };
+    }
+
+    const borderDark: Excel.Border = {
+      style: "thin",
+      color: { argb: "FF000000" },
+    };
+
+    // pro rows
+    for (const pro of week.prosHoraires) {
+      const color = pro.pro.color;
+      const vals1 = [pro.pro.prenom];
+      const vals2 = ["pauses"];
+      for (const dayI of pro.horaires) {
+        // duration
+        if (rangeIsEmpty(dayI.presence)) {
+          vals1.push("", "", "");
+        } else {
+          vals1.push(
+            formatHoraire(dayI.presence.start),
+            formatHoraire(dayI.presence.end),
+            ""
+          );
+        }
+
+        if (rangeIsEmpty(dayI.pause)) {
+          vals2.push("", "", "");
+        } else {
+          vals2.push(
+            formatHoraire(dayI.pause.start),
+            formatHoraire(dayI.pause.end),
+            ""
+          );
+        }
+      }
+      const row1 = sheet.addRow(vals1);
+      const row2 = sheet.addRow(vals2);
+      sheet.addRow([]);
+
+      setCenter(row1.number, 1);
+      setCenter(row2.number, 1);
+
+      const dayDurationCells = [];
+      for (let index = 0; index < 5; index++) {
+        const column = 2 + index * 3;
+        setCenter(row1.number, column);
+        setCenter(row1.number, column + 1);
+        setCenter(row2.number, column);
+        setCenter(row2.number, column + 1);
+        const cellStartPresence = sheet.getCell(row1.number, column);
+        const cellEndPresence = sheet.getCell(row1.number, column + 1);
+        const cellStartPause = sheet.getCell(row2.number, column);
+        const cellEndPause = sheet.getCell(row2.number, column + 1);
+
+        cellStartPresence.numFmt = "HH:MM";
+        cellEndPresence.numFmt = "HH:MM";
+        sheet.getCell(row1.number, column + 2).numFmt = "HH:MM";
+        cellStartPause.numFmt = "HH:MM";
+        cellEndPause.numFmt = "HH:MM";
+        sheet.getCell(row2.number, column + 2).numFmt = "HH:MM";
+
+        const formula = `${cellEndPresence.address} - ${cellStartPresence.address} - (${cellEndPause.address} - ${cellStartPause.address})`;
+
+        const cellDuration = sheet.getCell(row1.number, column + 2);
+        cellDuration.value = { formula };
+        setCenter(row1.number, column + 2);
+        cellDuration.style.alignment!.vertical = "middle";
+        sheet.mergeCells(row1.number, column + 2, row2.number, column + 2);
+        dayDurationCells.push(cellDuration.address);
+
+        // borders
+        cellStartPresence.border = { left: borderDark };
+        cellStartPause.border = { left: borderDark };
+        cellDuration.border = { right: borderDark };
+      }
+      // total for the week
+      const totalCell = sheet.getCell(row1.number, columnCount);
+      totalCell.numFmt = "[H]:MM:SS";
+      totalCell.value = {
+        formula: dayDurationCells.join(" + "),
+      };
+      sheet.mergeCells(row1.number, columnCount, row2.number, columnCount);
+      setCenter(row1.number, columnCount);
+      totalCell.style.alignment!.vertical = "middle";
+
+      // colorize
+      for (let index = 0; index < columnCount; index++) {
+        if (!color) continue;
+        const fill: Excel.Fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: `FF${color.substring(1)}` },
+        };
+        sheet.getCell(row1.number, index + 1).style.fill = fill;
+        sheet.getCell(row2.number, index + 1).style.fill = fill;
+        sheet.getCell(row1.number, index + 1).border = {
+          top: borderDark,
+          bottom: borderDark,
+        };
+        sheet.getCell(row2.number, index + 1).border = {
+          top: borderDark,
+          bottom: borderDark,
+        };
+      }
+    }
+
+    const lastRow = sheet.addRow([]);
+    // optional reunion
+    if (week.reunion) {
+      const cell = sheet.getCell(lastRow.number, 2 + week.reunion.day * 3);
+      cell.value = `Réunion ${formatHoraire(week.reunion.horaire)}`;
+      sheet.mergeCells(
+        cell.fullAddress.row,
+        cell.fullAddress.col,
+        cell.fullAddress.row,
+        cell.fullAddress.col + 1
+      );
+      setCenter(cell.fullAddress.row, cell.fullAddress.col);
+      cell.style.font = {
+        bold: true,
+        name: "Calibri",
+        color: { argb: "FFFF0000" },
+      };
+      sheet.addRow([]);
+    }
+  }
+
+  // write to a new buffer
+  return await workbook.xlsx.writeBuffer();
 }

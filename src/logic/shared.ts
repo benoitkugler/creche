@@ -22,13 +22,13 @@ export function isBefore(h1: Horaire, h2: Horaire) {
   );
 }
 
-function range_isEmpty(r: Range) {
+export function rangeIsEmpty(r: Range) {
   return isBefore(r.end, r.start);
 }
 
 /** returns true if other is (fully) included in this range */
 export function rangeIncludes(r: Range, other: Range): boolean {
-  if (range_isEmpty(other)) return true;
+  if (rangeIsEmpty(other)) return true;
   return isBefore(r.start, other.start) && isBefore(other.end, r.end);
 }
 

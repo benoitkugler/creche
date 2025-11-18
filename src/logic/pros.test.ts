@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
+import { tmpdir } from "os";
 import { isError } from "./shared";
-import { parseExcelPros } from "./pros";
+import { parseExcelPros, writeExcelPros } from "./pros";
 
 test("parse personnel 0", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
@@ -66,6 +67,40 @@ test("parse personnel 2", async () => {
   expect(isError(planning)).toBeFalse();
   if (isError(planning)) return;
   expect(planning.weeks).toHaveLength(2);
+});
+
+test("write personnel", async () => {
+  for (const { path, date } of [
+    {
+      path: "src/logic/sample_personnel_redacted_0.xlsx",
+      date: new Date(2025, 8, 1),
+    },
+    {
+      path: "src/logic/sample_personnel_redacted_1.xlsx",
+      date: new Date(2025, 8, 29),
+    },
+    {
+      path: "src/logic/sample_personnel_redacted_2.xlsx",
+      date: new Date(2025, 10, 3),
+    },
+  ]) {
+    const file = Bun.file(path);
+    const planning = await parseExcelPros(file, date);
+    expect(isError(planning)).toBeFalse();
+    if (isError(planning)) return;
+
+    const buffer = await writeExcelPros(planning, "- 2025");
+    const path2 = tmpdir() + "/test.xlsx";
+    await Bun.write(path2, buffer);
+
+    // test roundtrip
+    const file2 = Bun.file(path2);
+    const planning2 = await parseExcelPros(file2, date);
+    expect(isError(planning)).toBeFalse();
+    if (isError(planning2)) return;
+
+    expect(planning).toEqual(planning2);
+  }
 });
 
 // test("log horaires", async () => {
