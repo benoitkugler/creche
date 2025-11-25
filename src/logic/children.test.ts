@@ -69,3 +69,14 @@ test("parse personnel 2", async () => {
   expect(semaineLast[3]?.horaires).not.toBeUndefined();
   expect(semaineLast[4]?.horaires).not.toBeUndefined();
 });
+
+test("parse personnel 3", async () => {
+  const file = Bun.file("src/logic/sample_enfants_redacted_3.json");
+  const data: TextBlock[] = await file.json();
+  const res = parseChildrenPDF(data);
+  expect(isError(res)).toBeFalse();
+  if (isError(res)) return;
+
+  expect(res.weekCount).toBe(4);
+  expect(res.firstMonday.toISOString()).toBe("2025-12-01T00:00:00.000Z");
+});

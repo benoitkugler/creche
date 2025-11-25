@@ -14,6 +14,7 @@ func TestReadPDF(t *testing.T) {
 		"Planning Mensuel 0925.pdf",
 		"Planning Mensuel 1025.pdf",
 		"Planning Mensuel 1125.pdf",
+		"Planning Mensuel 1225.pdf",
 	} {
 		b, err := os.ReadFile(file)
 		if err != nil {

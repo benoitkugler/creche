@@ -431,6 +431,11 @@ export async function writeExcelPros(planning: ProsPlanning, month: string) {
           bottom: borderDark,
         };
       }
+
+      // optional detachement
+      if (pro.detachement) {
+        // TODO:
+      }
     }
 
     const lastRow = sheet.addRow([]);

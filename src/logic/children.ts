@@ -1,3 +1,4 @@
+import { text } from "stream/consumers";
 import {
   computeDate,
   type error,
@@ -106,7 +107,18 @@ export function parseChildrenPDF(texts: TextBlock[]): ChildrenPlanning | error {
   // remove it and shift firstMonday
   if (firstDayDay == 6 || firstDayDay == 7) {
     out.firstMonday.setDate(out.firstMonday.getDate() + 7);
-    out.children.forEach((enfant) => enfant.creneaux.splice(0, 1));
+    out.children.forEach((child) => child.creneaux.splice(0, 1));
+    out.weekCount -= 1;
+  }
+  if (out.weekCount == 0) return out;
+
+  // Also, the last week may be empty (for instance for Christmas vacation)
+  const lastWeek = out.weekCount - 1;
+  const lastWeekIsEmpty = out.children.every((child) =>
+    child.creneaux[lastWeek].every((d) => d == null)
+  );
+  if (lastWeekIsEmpty) {
+    out.children.forEach((child) => child.creneaux.splice(lastWeek, 1));
     out.weekCount -= 1;
   }
   return out;
@@ -166,12 +178,37 @@ const months = [
   "décembre",
 ];
 
+/** normalize returns s without accent and in lower case */
+function normalize(s: string) {
+  return s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 function parseMonth(s: string): { month: number; year: number } | error {
-  const reMonth = /Mois (?:de|d')\s?(\w+) (\d+)/;
+  const monthsNoAccent = [
+    "janvier",
+    "fevrier",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "aout",
+    "septembre",
+    "octobre",
+    "novembre",
+    "decembre",
+  ];
+
+  s = normalize(s);
+  const reMonth = /mois (?:de|d')\s?(\w+) (\d+)/;
   const res = reMonth.exec(s);
-  if (res === null) return newError("Entête du document invalide.");
+  if (res === null)
+    return newError("Entête du document invalide (mois manquant ou invalide).");
   const [_, monthS, yearS] = res;
-  const month = months.indexOf(monthS.toLowerCase().trim());
+  const month = monthsNoAccent.indexOf(monthS.toLowerCase().trim());
   const year = Number(yearS);
   return { month, year };
 }
