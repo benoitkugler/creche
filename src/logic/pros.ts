@@ -364,7 +364,7 @@ export async function writeExcelPros(planning: ProsPlanning, month: string) {
       }
       const row1 = sheet.addRow(vals1);
       const row2 = sheet.addRow(vals2);
-      sheet.addRow([]);
+      const row3 = sheet.addRow([]);
 
       setCenter(row1.number, 1);
       setCenter(row2.number, 1);
@@ -434,7 +434,23 @@ export async function writeExcelPros(planning: ProsPlanning, month: string) {
 
       // optional detachement
       if (pro.detachement) {
-        // TODO:
+        const det = pro.detachement;
+        const cell = sheet.getCell(row3.number, 2 + det.dayIndex * 3);
+        cell.value = `${formatHoraire(det.horaires.start)} ${formatHoraire(
+          det.horaires.end
+        )}`;
+        sheet.mergeCells(
+          cell.fullAddress.row,
+          cell.fullAddress.col,
+          cell.fullAddress.row,
+          cell.fullAddress.col + 1
+        );
+        setCenter(cell.fullAddress.row, cell.fullAddress.col);
+        cell.style.font = {
+          bold: true,
+          name: "Calibri",
+          color: { argb: "FF00FF00" },
+        };
       }
     }
 

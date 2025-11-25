@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { tmpdir } from "os";
-import { isError } from "./shared";
+import { fromJson, isError } from "./shared";
 import { parseExcelPros, writeExcelPros } from "./pros";
+import type { ProsPlanning } from "./types";
 
 test("parse personnel 0", async () => {
   const file = Bun.file("src/logic/sample_personnel_redacted_0.xlsx");
@@ -89,8 +90,21 @@ test("write personnel", async () => {
     expect(isError(planning)).toBeFalse();
     if (isError(planning)) return;
 
-    const buffer = await writeExcelPros(planning, "- 2025");
-    const path2 = tmpdir() + "/test.xlsx";
+    const plCopy = fromJson<ProsPlanning>(JSON.stringify(planning));
+    plCopy.weeks.forEach((w) =>
+      w.prosHoraires.forEach(
+        (pro) =>
+          (pro.detachement = {
+            dayIndex: 0,
+            horaires: {
+              start: { heure: 10, minute: 0 },
+              end: { heure: 11, minute: 25 },
+            },
+          })
+      )
+    );
+    const buffer = await writeExcelPros(plCopy, "- 2025");
+    const path2 = tmpdir() + `/test_${date.getMonth()}${date.getDay()}.xlsx`;
     await Bun.write(path2, buffer);
 
     // test roundtrip
