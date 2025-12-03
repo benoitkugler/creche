@@ -1297,11 +1297,18 @@ fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck 
         const Self = @This();
 
         // returns true if h1 < h2
-        pub fn isLess(_: void, h1: Self, h2: Self) bool {
+        pub fn isArrivalLess(_: void, h1: Self, h2: Self) bool {
             const start = sh.Horaire.compare(h1.presence.start, h2.presence.start);
             if (start != 0) return start == -1;
             // if the arrivals are the same, compare departures
             return sh.Horaire.compare(h1.presence.end, h2.presence.end) == -1;
+        }
+
+        pub fn isDepartureLess(_: void, h1: Self, h2: Self) bool {
+            const start = sh.Horaire.compare(h1.presence.end, h2.presence.end);
+            if (start != 0) return start == -1;
+            // if the deparutre are the same, compare arrivals
+            return sh.Horaire.compare(h1.presence.start, h2.presence.start) == -1;
         }
     };
 
@@ -1325,9 +1332,16 @@ fn checkRoulements(week: sh.WeekPros, roulements: sh.Roulements) RoulementCheck 
         }
 
         // sort by arrival
-        std.mem.sortUnstable(proIndex, &prosForDay, {}, proIndex.isLess);
+        std.mem.sortUnstable(proIndex, &prosForDay, {}, proIndex.isArrivalLess);
+        const got0 = prosForDay[0].index;
+        const got1 = prosForDay[1].index;
 
-        const got = .{ prosForDay[0].index, prosForDay[1].index, prosForDay[2].index, prosForDay[3].index };
+        // sort by departure
+        std.mem.sortUnstable(proIndex, &prosForDay, {}, proIndex.isDepartureLess);
+        const got2 = prosForDay[2].index;
+        const got3 = prosForDay[3].index;
+
+        const got = .{ got0, got1, got2, got3 };
         if (!std.mem.eql(usize, &exp, &got)) {
             out.push(.{
                 .dayIndex = @intCast(dayI),

@@ -77,6 +77,8 @@ test("parse personnel 3", async () => {
   expect(isError(res)).toBeFalse();
   if (isError(res)) return;
 
+  Bun.write("children_3.json", JSON.stringify(res));
+
   expect(res.weekCount).toBe(4);
   expect(res.firstMonday.toISOString()).toBe("2025-12-01T00:00:00.000Z");
 });
