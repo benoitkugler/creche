@@ -37,7 +37,7 @@
 
 <script lang="ts" setup>
 import { computeDate, type int } from "@/logic/shared";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import ProsSemaineView from "./ProsSemaineView.vue";
 import type {
   ChildrenPlanning,
@@ -92,7 +92,7 @@ const diagnostics = ref<Diagnostic[]>([]);
 watch(
   () => props.planningPros,
   async () => (diagnostics.value = await computeChecks()),
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 
 async function computeChecks() {
