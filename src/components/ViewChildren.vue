@@ -1,9 +1,9 @@
 <template>
   <v-card
-    title="Planning des enfants"
-    :subtitle="`${
+    :title="`Planning des enfants - ${
       props.planning ? planningMonth(props.planning) : ''
-    } - Les adaptations sont en orange.`"
+    }`"
+    :subtitle="`modifié le ${props.lastSave.toLocaleString()}`"
   >
     <template #append>
       <v-btn color="green" @click="showUploadDialog = true">
@@ -79,7 +79,10 @@ import ChildrenCalendar from "./ChildrenCalendar.vue";
 import { Wasm } from "@/logic/wasm";
 import { isError } from "@/logic/shared";
 
-const props = defineProps<{ planning: ChildrenPlanning | null }>();
+const props = defineProps<{
+  planning: ChildrenPlanning | null;
+  lastSave: Date;
+}>();
 
 const emit = defineEmits<{
   (e: "update", planning: ChildrenPlanning): void;

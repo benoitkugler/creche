@@ -3,11 +3,12 @@
     <ViewChildren
       v-if="step == 'view-children'"
       :planning="childrenPlanning"
+      :lastSave="lastSaveChildren"
       @go-next="step = 'view-pros'"
       @update="
         (p) => {
           childrenPlanning = p;
-          save();
+          save('children');
         }
       "
       @load="
@@ -15,7 +16,7 @@
           childrenPlanning = p;
           prosPlanning = null;
           roulements = null;
-          save();
+          save('children');
         }
       "
     ></ViewChildren>
@@ -24,11 +25,12 @@
       :planning-children="childrenPlanning"
       :planning-pros="prosPlanning"
       :roulements="roulements"
+      :lastSave="lastSavePros"
       @update="
         (p, r) => {
           prosPlanning = p;
           roulements = r;
-          save();
+          save('pros');
         }
       "
       @edit-horaires="editHorairesPros"
@@ -72,10 +74,15 @@ const prosPlanning = ref<ProsPlanning | null>(null);
 
 const roulements = ref<Roulements | null>(null);
 
+const lastSaveChildren = ref<Date>(new Date());
+const lastSavePros = ref<Date>(new Date());
+
 const successMessage = ref<string | null>(null);
 
 type localSave = {
   version: number;
+  lastSaveChildren: Date;
+  lastSavePros: Date;
   childrenPlanning: ChildrenPlanning;
   prosPlanning: ProsPlanning;
   roulements: Roulements | null;
@@ -83,11 +90,18 @@ type localSave = {
 
 const currentVersion = 2;
 
-function save() {
+function save(data: "pros" | "children") {
+  if (data == "children") {
+    lastSaveChildren.value = new Date(Date.now());
+  } else {
+    lastSavePros.value = new Date(Date.now());
+  }
   window.localStorage.setItem(
     "local-save",
     JSON.stringify({
       version: currentVersion,
+      lastSaveChildren: lastSaveChildren.value,
+      lastSavePros: lastSavePros.value,
       childrenPlanning: childrenPlanning.value,
       prosPlanning: prosPlanning.value,
       roulements: roulements.value,
@@ -100,9 +114,11 @@ function load() {
   if (!json) return;
 
   const localSave: localSave = fromJson(json);
-  // avoid errors due to internal format chaange
+  // avoid errors due to internal format change
   if (localSave.version != currentVersion) return;
 
+  lastSaveChildren.value = localSave.lastSaveChildren || new Date(Date.now()); // may be undefined
+  lastSavePros.value = localSave.lastSavePros || new Date(Date.now()); // may be undefined
   childrenPlanning.value = localSave.childrenPlanning;
   prosPlanning.value = localSave.prosPlanning;
   roulements.value = localSave.roulements;
@@ -115,7 +131,7 @@ function editHorairesPros(day: DayIndex, horaires: HoraireTravail[]) {
   if (l.length != horaires.length) return; // should not happen
   horaires.forEach((v, i) => (l[i].horaires[day.day] = v));
   successMessage.value = "Horaires modifiés avec succès.";
-  save();
+  save("pros");
 }
 
 function editMiscPros(
@@ -132,6 +148,6 @@ function editMiscPros(
   weekPro.reunion = reunion;
   detachements.forEach((v, i) => (l[i].detachement = v));
   successMessage.value = "Créneaux modifiés avec succès.";
-  save();
+  save("pros");
 }
 </script>

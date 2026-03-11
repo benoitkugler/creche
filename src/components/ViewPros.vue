@@ -1,7 +1,9 @@
 <template>
   <v-card
-    title="Planning des pros"
-    :subtitle="planningMonth(props.planningChildren)"
+    :title="`Planning des pros - ${
+      props.planningChildren ? planningMonth(props.planningChildren) : ''
+    }`"
+    :subtitle="`modifié le ${props.lastSave.toLocaleString()}`"
   >
     <template #append>
       <v-btn @click="showSelectTask = true" prepend-icon="mdi-assistant">
@@ -89,6 +91,7 @@ const props = defineProps<{
   planningChildren: ChildrenPlanning;
   planningPros: ProsPlanning | null;
   roulements: Roulements | null;
+  lastSave: Date;
 }>();
 
 onMounted(() => {
