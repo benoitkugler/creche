@@ -8,7 +8,7 @@
         <th style="width: 200px">Enfant</th>
         <th style="width: 80px">Marcheur ?</th>
         <th v-for="day in days" style="width: 40px">
-          {{ formatDay(day) }}
+          {{ formatDay(inner.firstMonday, day) }}
         </th>
       </tr>
       <tr v-for="enfant in inner.children">
@@ -33,29 +33,46 @@
           v-for="day in days"
           :style="{
             'font-size': 'smaller',
-            cursor: enfant.creneaux[day.week][day.day] == null ? '' : 'pointer',
+            cursor: 'pointer',
             'background-color': enfant.creneaux[day.week][day.day]?.isAdaptation
               ? 'orange'
               : '',
           }"
           class="text-center"
-          @click="
-            enfant.creneaux[day.week][day.day]!.isAdaptation =
-              !enfant.creneaux[day.week][day.day]!.isAdaptation;
-            emit('update', inner);
-          "
+          @click="toEdit = { enfant, day }"
         >
           {{ formatHoraires(enfant.creneaux[day.week][day.day]) }}
         </td>
       </tr>
     </tbody>
+
+    <v-dialog
+      :model-value="toEdit != null"
+      @update:model-value="toEdit = null"
+      max-width="600px"
+    >
+      <ChildrenDayEdit
+        v-if="toEdit"
+        :child="toEdit.enfant.child"
+        :first-monday="inner.firstMonday"
+        :day-index="toEdit.day"
+        :model-value="toEdit.enfant.creneaux[toEdit.day.week][toEdit.day.day]"
+        @update:model-value="(v: ChildDay|null) => {toEdit!.enfant.creneaux[toEdit!.day.week][toEdit!.day.day] = v; toEdit = null; emit('update', inner)}"
+      ></ChildrenDayEdit>
+    </v-dialog>
   </table>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
-import { computeDate, copy, formatHoraire } from "@/logic/shared";
-import type { ChildDay, ChildrenPlanning, DayIndex } from "@/logic/types";
+import { copy, formatDay, formatHoraire } from "@/logic/shared";
+import type {
+  ChildCreneaux,
+  ChildDay,
+  ChildrenPlanning,
+  DayIndex,
+} from "@/logic/types";
+import ChildrenDayEdit from "./ChildrenDayEdit.vue";
 
 const props = defineProps<{ planning: ChildrenPlanning }>();
 
@@ -81,22 +98,14 @@ const days = computed(() => {
   return out;
 });
 
-const weekDays = ["d", "l", "m", "m", "j", "v", "s"];
-
-function formatDay(day: DayIndex) {
-  const date = computeDate(inner.value.firstMonday, day);
-  return `${weekDays[date.getDay()]} ${date
-    .getDate()
-    .toString()
-    .padStart(2, "0")}`;
-}
-
 function formatHoraires(creneau: ChildDay | null) {
   if (creneau === null) return "";
   return `${formatHoraire(creneau.horaires.start)} ${formatHoraire(
     creneau.horaires.end
   )}`;
 }
+
+const toEdit = ref<{ enfant: ChildCreneaux; day: DayIndex } | null>(null);
 </script>
 
 <style>

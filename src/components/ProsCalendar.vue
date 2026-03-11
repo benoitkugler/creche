@@ -91,7 +91,9 @@ const diagnostics = ref<Diagnostic[]>([]);
 
 watch(
   () => props.planningPros,
-  async () => (diagnostics.value = await computeChecks()),
+  async () => {
+    diagnostics.value = await computeChecks();
+  },
   { immediate: true, deep: true }
 );
 

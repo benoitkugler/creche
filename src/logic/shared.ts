@@ -137,6 +137,15 @@ export function copy<T>(v: T) {
   return fromJson<T>(JSON.stringify(v));
 }
 
+const weekDays = ["d", "l", "m", "m", "j", "v", "s"];
+export function formatDay(firstMonday: Date, day: DayIndex) {
+  const date = computeDate(firstMonday, day);
+  return `${weekDays[date.getDay()]} ${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export type CellValue = Date | string | null;
 export type Cell = { value: CellValue; color: string };
 
